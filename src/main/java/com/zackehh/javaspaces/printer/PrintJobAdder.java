@@ -15,8 +15,8 @@ public class PrintJobAdder extends JFrame {
     private String spacename;
 
     private JPanel jPanel1, jPanel2;
-    private JLabel jobLabel, jobNumberLabel;
-    private JTextField jobNameIn, jobNumberOut;
+    private JLabel jobLabel, jobNumberLabel, jobPriorityLabel;
+    private JTextField jobNameIn, jobNumberOut, jobPriorityIn;
     private JButton addJobButton;
 
     public static void main(String[] args) {
@@ -43,22 +43,30 @@ public class PrintJobAdder extends JFrame {
         });
 
         Container cp = getContentPane();
-        cp.setLayout (new BorderLayout ());
+        cp.setLayout(new BorderLayout());
 
-        jPanel1 = new JPanel ();
-        jPanel1.setLayout (new FlowLayout ());
+        jPanel1 = new JPanel();
+        jPanel1.setLayout(new FlowLayout());
 
-        jobLabel = new JLabel ();
-        jobLabel.setText ("Name of file to print ");
-        jPanel1.add (jobLabel);
+        jobLabel = new JLabel();
+        jobLabel.setText("Name of file to print ");
+        jPanel1.add(jobLabel);
 
-        jobNameIn = new JTextField (12);
-        jobNameIn.setText ("");
-        jPanel1.add (jobNameIn);
+        jobNameIn = new JTextField(12);
+        jobNameIn.setText("");
+        jPanel1.add(jobNameIn);
 
-        jobNumberLabel = new JLabel ();
-        jobNumberLabel.setText ("Print job number ");
-        jPanel1.add (jobNumberLabel);
+        jobPriorityLabel = new JLabel();
+        jobPriorityLabel.setText("Priority of job ");
+        jPanel1.add(jobPriorityLabel);
+
+        jobPriorityIn = new JTextField(1);
+        jobPriorityIn.setText("");
+        jPanel1.add(jobPriorityIn);
+
+        jobNumberLabel = new JLabel();
+        jobNumberLabel.setText("Print job number ");
+        jPanel1.add(jobNumberLabel);
 
         jobNumberOut = new JTextField (6);
         jobNumberOut.setText ("");
@@ -89,8 +97,9 @@ public class PrintJobAdder extends JFrame {
             IWsQueueStatus qStatus = (IWsQueueStatus)space.take(qsTemplate,null,Long.MAX_VALUE);
 
             int jobNumber = qStatus.nextJob;
+            int jobPriority = Integer.parseInt(jobPriorityIn.getText() == null ? "1" : jobPriorityIn.getText());
             String jobName = jobNameIn.getText();
-            IWsQueueItem newJob = new IWsQueueItem(jobNumber, jobName);
+            IWsQueueItem newJob = new IWsQueueItem(jobNumber, jobName, jobPriority);
             space.write( newJob, null, Lease.FOREVER);
             jobNumberOut.setText(""+jobNumber);
 

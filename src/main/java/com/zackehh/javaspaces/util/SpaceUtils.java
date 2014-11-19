@@ -29,7 +29,7 @@ public class SpaceUtils {
 	}
 
 	public static JavaSpace getSpace() {
-		return getSpace("waterloo");
+		return getSpace("localhost");
 	}
 
 	public static TransactionManager getManager(String hostname) {

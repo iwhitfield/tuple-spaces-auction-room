@@ -30,11 +30,11 @@ public class PrintJobPrinter extends JFrame {
     
     private void initComponents () {
         setTitle ("Print Job Printer");
-        addWindowListener (new java.awt.event.WindowAdapter () {
+        addWindowListener(new java.awt.event.WindowAdapter () {
             public void windowClosing (java.awt.event.WindowEvent evt) {
-            System.exit(0);
+                System.exit(0);
             }
-        }   );
+        });
 
         Container cp = getContentPane();
         cp.setLayout (new BorderLayout ());
@@ -49,13 +49,23 @@ public class PrintJobPrinter extends JFrame {
     }
 
     public void processPrintJobs(){
+        int priority = 1;
         while(true){
             try {
-                IWsQueueItem qiTemplate = new IWsQueueItem();
-                IWsQueueItem nextJob = (IWsQueueItem)space.take(qiTemplate,null,Long.MAX_VALUE);
+                IWsQueueItem qiTemplate = new IWsQueueItem(priority);
+                IWsQueueItem nextJob = (IWsQueueItem) space.take(qiTemplate, null, 500);
+                if(nextJob == null){
+                    if(++priority == 6){
+                        priority = 1;
+                    }
+                    continue;
+                }
+                priority = 1;
+
                 int nextJobNumber = nextJob.jobNumber;
+                int nextJobPriority = nextJob.jobPriority;
                 String nextJobName = nextJob.filename;
-                jobList.append("Job Number: " + nextJobNumber + " Filename: " + nextJobName + "\n" );
+                jobList.append("Job Number: " + nextJobNumber + " Filename: " + nextJobName + " Priority: " + nextJobPriority + "\n" );
             } catch (Exception e) {
                 e.printStackTrace();
             }

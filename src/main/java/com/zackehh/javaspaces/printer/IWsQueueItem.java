@@ -4,18 +4,27 @@ import net.jini.core.entry.*;
 
 public class IWsQueueItem implements Entry {
 
-    // Variables
     public Integer jobNumber;
+    public Integer jobPriority;
     public String filename;
-    
-    // No arg contructor
-    public IWsQueueItem (){
 
+    public IWsQueueItem (){
+        // Noop
     }
-    
-    // Arg constructor
+
+    public IWsQueueItem(int priority){
+        jobPriority = priority;
+    }
+
     public IWsQueueItem (int job, String fn){
         jobNumber = job;
         filename = fn;
+        jobPriority = 1;
+    }
+
+    public IWsQueueItem(int job, String fn, int priority){
+        jobNumber = job;
+        filename = fn;
+        jobPriority = priority;
     }
 }
