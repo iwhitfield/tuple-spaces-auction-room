@@ -16,8 +16,9 @@ public class SpaceUtils {
 
 			ServiceRegistrar sr = l.getRegistrar();
 
-			Class c = Class.forName("net.jini.space.JavaSpace");
-			Class[] classTemplate = {c};
+			Class[] classTemplate = {
+                Class.forName("net.jini.space.JavaSpace")
+            };
 
 			js = (JavaSpace) sr.lookup(new ServiceTemplate(null, classTemplate, null));
 
