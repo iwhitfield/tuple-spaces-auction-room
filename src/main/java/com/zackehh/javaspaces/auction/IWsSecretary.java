@@ -8,12 +8,12 @@ public class IWsSecretary implements Entry {
     public Integer jobNumber;
 
     // No arg constructor
-    public IWsSecretary (){
+    public IWsSecretary(){
 
     }
 
-    public IWsSecretary (int n){
-        jobNumber = n;
+    public IWsSecretary(int jobNumber){
+        this.jobNumber = jobNumber;
     }
 
     public Integer addNewJob(){

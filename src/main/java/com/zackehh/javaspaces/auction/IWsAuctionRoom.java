@@ -1,6 +1,5 @@
 package com.zackehh.javaspaces.auction;
 
-import com.zackehh.javaspaces.printer.IWsQueueItem;
 import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import net.jini.core.lease.Lease;
@@ -29,12 +28,13 @@ public class IWsAuctionRoom extends JFrame {
     private JavaSpace space;
 
     private JButton addJobButton;
-    private JLabel errorTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
+    private JLabel resultTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
     private JPanel bidListingPanel, fieldInputPanel;
     private JScrollPane itemListPanel;
     private JTable lotTable;
     private JTextArea itemListOut;
-    private JTextField itemNameIn, startingPriceIn, itemDescriptionIn, errorTextOut;
+    private JTextField itemNameIn, startingPriceIn, itemDescriptionIn, resultTextOut;
+    private JPanel cards, auctionCard, bidCard;
 
     public static void main(String[] args) {
         new IWsAuctionRoom();
@@ -100,8 +100,12 @@ public class IWsAuctionRoom extends JFrame {
 
     }
 
+    /**
+     * Main body of UI creation. Creates main frame and
+     * attaches all needed listeners.
+     */
     private void initComponents() {
-        setTitle("Auction Room");
+        setTitle(Constants.APPLICATION_TITLE);
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent evt) {
                 System.exit(0);
@@ -110,6 +114,11 @@ public class IWsAuctionRoom extends JFrame {
 
         Container cp = getContentPane();
         cp.setLayout(new BorderLayout());
+
+        cards = new JPanel(new CardLayout());
+
+        auctionCard = new JPanel(new BorderLayout());
+        bidCard = new JPanel(new BorderLayout());
 
         fieldInputPanel = new JPanel(new GridLayout(4, 2));
         fieldInputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -120,10 +129,10 @@ public class IWsAuctionRoom extends JFrame {
         itemDescriptionIn = new JTextField("", 1);
         startingPriceLabel = new JLabel("Starting Price: ");
         startingPriceIn = new JTextField("", 6);
-        errorTextLabel = new JLabel("Result: ");
-        errorTextOut = new JTextField("");
+        resultTextLabel = new JLabel("Result: ");
+        resultTextOut = new JTextField("");
 
-        errorTextOut.setEditable(false);
+        resultTextOut.setEditable(false);
 
         fieldInputPanel.add(itemNameLabel);
         fieldInputPanel.add(itemNameIn);
@@ -131,10 +140,10 @@ public class IWsAuctionRoom extends JFrame {
         fieldInputPanel.add(itemDescriptionIn);
         fieldInputPanel.add(startingPriceLabel);
         fieldInputPanel.add(startingPriceIn);
-        fieldInputPanel.add(errorTextLabel);
-        fieldInputPanel.add(errorTextOut);
+        fieldInputPanel.add(resultTextLabel);
+        fieldInputPanel.add(resultTextOut);
 
-        cp.add(fieldInputPanel, "North");
+        auctionCard.add(fieldInputPanel, BorderLayout.NORTH);
 
         itemListOut = new JTextArea(30, 30);
         itemListOut.setEditable(false);
@@ -180,6 +189,8 @@ public class IWsAuctionRoom extends JFrame {
                 if(event.getClickCount() == 2){
                     System.out.println("Selected ID: " + lots.get(row).getId() +
                             ", Item Name: " + lots.get(row).getItemName());
+                    CardLayout cl = (CardLayout)(cards.getLayout());
+                    cl.show(cards, Constants.BID_CARD);
                 }
             }
         });
@@ -195,7 +206,7 @@ public class IWsAuctionRoom extends JFrame {
         // Add the table to a scrolling pane
         itemListPanel = new JScrollPane(lotTable);
 
-        cp.add(itemListPanel, "Center");
+        auctionCard.add(itemListPanel, BorderLayout.CENTER);
 
         bidListingPanel = new JPanel();
         bidListingPanel.setLayout(new FlowLayout());
@@ -204,7 +215,7 @@ public class IWsAuctionRoom extends JFrame {
         addJobButton.setText("Add Auction Item");
         addJobButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                errorTextOut.setText("");
+                resultTextOut.setText("");
 
                 String itemName = itemNameIn.getText();
                 String itemDescription = itemDescriptionIn.getText();
@@ -225,6 +236,7 @@ public class IWsAuctionRoom extends JFrame {
 
                     space.write(newLot, null, Lease.FOREVER);
                     space.write(secretary, null, Lease.FOREVER);
+                    resultTextOut.setText("Added Lot #" + jobNumber + "!");
                 } catch(Exception e) {
                     System.err.println("Error when adding lot to the space: " + e);
                     e.printStackTrace();
@@ -234,7 +246,13 @@ public class IWsAuctionRoom extends JFrame {
         });
         bidListingPanel.add(addJobButton);
 
-        cp.add(bidListingPanel, "South");
+        auctionCard.add(bidListingPanel, BorderLayout.SOUTH);
+
+        cards.add(auctionCard, Constants.AUCTION_CARD);
+
+        cards.add(bidCard, Constants.BID_CARD);
+
+        cp.add(cards);
     }
 
     /**
@@ -248,7 +266,7 @@ public class IWsAuctionRoom extends JFrame {
         try {
             return NumberFormat.getInstance().parse(component.getText());
         } catch(ParseException e){
-            errorTextOut.setText("Invalid price!");
+            resultTextOut.setText("Invalid price!");
             return null;
         }
     }
