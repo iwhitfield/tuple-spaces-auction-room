@@ -2,12 +2,10 @@ package com.zackehh.javaspaces.auction;
 
 import com.zackehh.javaspaces.printer.IWsQueueItem;
 import com.zackehh.javaspaces.util.SpaceUtils;
-import javafx.scene.input.MouseEvent;
+import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
-import sun.swing.table.DefaultTableCellHeaderRenderer;
 
 import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -16,21 +14,24 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.EventObject;
 
 public class IWsAuctionRoom extends JFrame {
 
+    private ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
     private JavaSpace space;
+
     private JButton addJobButton;
     private JLabel errorTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
     private JPanel bidListingPanel, fieldInputPanel;
     private JScrollPane itemListPanel;
+    private JTable lotTable;
     private JTextArea itemListOut;
     private JTextField itemNameIn, startingPriceIn, itemDescriptionIn, errorTextOut;
 
@@ -45,9 +46,52 @@ public class IWsAuctionRoom extends JFrame {
             System.exit(1);
         }
 
+        try {
+            Object o = space.read(new IWsSecretary(), null, 1000);
+            if(o == null){
+                space.write(new IWsSecretary(0), null, Lease.FOREVER);
+            }
+        } catch(Exception e){
+            System.err.println("Died trying to read from the space: " + e);
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         initComponents();
         pack();
         setVisible(true);
+
+        new Thread(new Runnable(){
+
+            DefaultTableModel model = ((DefaultTableModel) lotTable.getModel());
+
+            @Override
+            public void run() {
+
+                while(true) {
+                    try {
+                        IWsLot template = new IWsLot(lots.size() + 1, null, null, null);
+                        IWsLot latestLot = (IWsLot) space.read(template, null, 3000);
+                        if (latestLot == null) {
+                            Thread.sleep(5000);
+                        } else {
+                            lots.add(latestLot);
+                            model.addRow(new Object[]{latestLot.getId(), latestLot.getItemName(), latestLot.getCurrentPrice()});
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        try {
+                            Thread.sleep(5000);
+                        } catch(Exception ex){
+                            // no-op
+                        }
+                    }
+                }
+
+            }
+
+        }).start();
+
     }
 
     private void initComponents() {
@@ -95,11 +139,8 @@ public class IWsAuctionRoom extends JFrame {
         );
 
         String[] columns = new String[] {
-                "Lot ID", "Item Name", "Current Price"
+            "Lot ID", "Item Name", "Current Price"
         };
-
-        // Create data for each element
-        ArrayList<IWsLot> lots = getTestDataset();
 
         String[][] dataValues = new String[lots.size()][columns.length + 1];
 
@@ -109,17 +150,16 @@ public class IWsAuctionRoom extends JFrame {
             dataValues[iY][2] = lots.get(iY).getCurrentPrice().toString();
         }
 
-
-        JTable table = new JTable();
+        lotTable = new JTable();
 
         // Configure some of JTable's paramters
-        table.setShowGrid(false);
-        table.setRowSelectionAllowed(true);
-        table.setDefaultRenderer(String.class, new DefaultTableCellRenderer(){{
+        lotTable.setShowHorizontalLines(true);
+        lotTable.setRowSelectionAllowed(true);
+        lotTable.setDefaultRenderer(String.class, new DefaultTableCellRenderer(){{
             setHorizontalAlignment(JLabel.CENTER);
         }});
 
-        table.setModel(new DefaultTableModel(dataValues, columns) {
+        lotTable.setModel(new DefaultTableModel(dataValues, columns) {
 
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -134,7 +174,17 @@ public class IWsAuctionRoom extends JFrame {
 
         });
 
-        JTableHeader tableHeader = table.getTableHeader();
+        lotTable.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent event) {
+                int row = lotTable.rowAtPoint(event.getPoint());
+                if(event.getClickCount() == 2){
+                    System.out.println("Selected ID: " + lots.get(row).getId() +
+                            ", Item Name: " + lots.get(row).getItemName());
+                }
+            }
+        });
+
+        JTableHeader tableHeader = lotTable.getTableHeader();
 
         tableHeader.setReorderingAllowed(false);
         tableHeader.setResizingAllowed(false);
@@ -143,7 +193,7 @@ public class IWsAuctionRoom extends JFrame {
                 .setHorizontalAlignment(SwingConstants.CENTER);
 
         // Add the table to a scrolling pane
-        itemListPanel = new JScrollPane(table);
+        itemListPanel = new JScrollPane(lotTable);
 
         cp.add(itemListPanel, "Center");
 
@@ -160,7 +210,26 @@ public class IWsAuctionRoom extends JFrame {
                 String itemDescription = itemDescriptionIn.getText();
                 Double startingPrice = getTextAsCurrency(startingPriceIn);
 
-                System.out.println(startingPrice + "");
+                if(startingPrice == null){
+                    return;
+                }
+
+                try {
+                    IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, 3000);
+
+                    System.out.println("Secretary state: " + secretary.jobNumber);
+
+                    int jobNumber = secretary.addNewJob();
+                    System.out.println(jobNumber + "");
+                    IWsLot newLot = new IWsLot(jobNumber, itemName, startingPrice, itemDescription);
+
+                    space.write(newLot, null, Lease.FOREVER);
+                    space.write(secretary, null, Lease.FOREVER);
+                } catch(Exception e) {
+                    System.err.println("Error when adding lot to the space: " + e);
+                    e.printStackTrace();
+                }
+
             }
         });
         bidListingPanel.add(addJobButton);
@@ -200,40 +269,6 @@ public class IWsAuctionRoom extends JFrame {
         Double textAsDouble = textAsNumber.doubleValue();
         String textAsCurrency = currencyEnforcer.format(textAsDouble);
         return Double.parseDouble(textAsCurrency);
-    }
-
-    private ArrayList<IWsLot> getTestDataset(){
-        ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
-
-        for(int i = 0; i < 100; i++) {
-            lots.add(new IWsLot(i, "name", 175, null));
-        }
-
-        return lots;
-    }
-
-    public void processPrintJobs(){
-        int priority = 1;
-        while(true){
-            try {
-                IWsQueueItem qiTemplate = new IWsQueueItem(priority);
-                IWsQueueItem nextJob = (IWsQueueItem) space.take(qiTemplate, null, 500);
-                if(nextJob == null){
-                    if(++priority == 6){
-                        priority = 1;
-                    }
-                    continue;
-                }
-                priority = 1;
-
-                int nextJobNumber = nextJob.jobNumber;
-                int nextJobPriority = nextJob.jobPriority;
-                String nextJobName = nextJob.filename;
-                itemListOut.append("Job Number: " + nextJobNumber + " Filename: " + nextJobName + " Priority: " + nextJobPriority + "\n" );
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
 }

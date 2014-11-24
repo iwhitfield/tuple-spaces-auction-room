@@ -4,16 +4,16 @@ import net.jini.core.entry.*;
 
 public class IWsLot implements Entry {
 
-    private Integer id;
-    private Double currentPrice;
-    private String itemName;
-    private String itemDescription;
+    public Integer id;
+    public Double currentPrice;
+    public String itemName;
+    public String itemDescription;
 
     public IWsLot(){
         // No-op
     }
 
-    public IWsLot(int id, String itemName, double currentPrice, String itemDescription){
+    public IWsLot(Integer id, String itemName, Double currentPrice, String itemDescription){
         this.id = id;
         this.itemName = itemName;
         this.currentPrice = currentPrice;
