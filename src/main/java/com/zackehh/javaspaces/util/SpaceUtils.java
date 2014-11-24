@@ -21,7 +21,8 @@ public class SpaceUtils {
             };
 
 			js = (JavaSpace) sr.lookup(new ServiceTemplate(null, classTemplate, null));
-
+            
+            System.out.println("Successfully connected!");
 		} catch (Exception e) {
 			System.err.println("Error: " + e);
 		}

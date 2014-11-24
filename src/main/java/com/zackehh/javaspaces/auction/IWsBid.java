@@ -6,14 +6,14 @@ public class IWsBid implements Entry {
 
     private Boolean isPublic;
     private Integer id;
-    private Integer maxPrice;
+    private Double maxPrice;
     private String itemName;
 
     public IWsBid(){
         // No-op
     }
 
-    public IWsBid(int id, String itemName, int maxPrice, boolean isPublic){
+    public IWsBid(int id, String itemName, double maxPrice, boolean isPublic){
         this.id = id;
         this.itemName = itemName;
         this.maxPrice = maxPrice;
@@ -28,7 +28,7 @@ public class IWsBid implements Entry {
         return itemName;
     }
 
-    public Integer getMaxPrice(){
+    public Double getMaxPrice(){
         return maxPrice;
     }
 

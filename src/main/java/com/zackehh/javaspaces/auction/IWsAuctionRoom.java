@@ -2,18 +2,27 @@ package com.zackehh.javaspaces.auction;
 
 import com.zackehh.javaspaces.printer.IWsQueueItem;
 import com.zackehh.javaspaces.util.SpaceUtils;
+import javafx.scene.input.MouseEvent;
 import net.jini.space.JavaSpace;
+import sun.swing.table.DefaultTableCellHeaderRenderer;
 
 import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.EventObject;
 
 public class IWsAuctionRoom extends JFrame {
 
@@ -85,13 +94,64 @@ public class IWsAuctionRoom extends JFrame {
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
 
+        String[] columns = new String[] {
+                "Lot ID", "Item Name", "Current Price"
+        };
+
+        // Create data for each element
+        ArrayList<IWsLot> lots = getTestDataset();
+
+        String[][] dataValues = new String[lots.size()][columns.length + 1];
+
+        for(int iY = 0; iY < lots.size(); iY++){
+            dataValues[iY][0] = lots.get(iY).getId().toString();
+            dataValues[iY][1] = lots.get(iY).getItemName();
+            dataValues[iY][2] = lots.get(iY).getCurrentPrice().toString();
+        }
+
+
+        JTable table = new JTable();
+
+        // Configure some of JTable's paramters
+        table.setShowGrid(false);
+        table.setRowSelectionAllowed(true);
+        table.setDefaultRenderer(String.class, new DefaultTableCellRenderer(){{
+            setHorizontalAlignment(JLabel.CENTER);
+        }});
+
+        table.setModel(new DefaultTableModel(dataValues, columns) {
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                //all cells false
+                return false;
+            }
+
+            @Override
+            public Class getColumnClass(int column) {
+                return String.class;
+            }
+
+        });
+
+        JTableHeader tableHeader = table.getTableHeader();
+
+        tableHeader.setReorderingAllowed(false);
+        tableHeader.setResizingAllowed(false);
+
+        ((DefaultTableCellRenderer) tableHeader.getDefaultRenderer())
+                .setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Add the table to a scrolling pane
+        itemListPanel = new JScrollPane(table);
+
         cp.add(itemListPanel, "Center");
 
         bidListingPanel = new JPanel();
         bidListingPanel.setLayout(new FlowLayout());
 
         addJobButton = new JButton();
-        addJobButton.setText("Add Print Job");
+        addJobButton.setText("Add Auction Item");
         addJobButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 errorTextOut.setText("");
@@ -140,6 +200,16 @@ public class IWsAuctionRoom extends JFrame {
         Double textAsDouble = textAsNumber.doubleValue();
         String textAsCurrency = currencyEnforcer.format(textAsDouble);
         return Double.parseDouble(textAsCurrency);
+    }
+
+    private ArrayList<IWsLot> getTestDataset(){
+        ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
+
+        for(int i = 0; i < 100; i++) {
+            lots.add(new IWsLot(i, "name", 175, null));
+        }
+
+        return lots;
     }
 
     public void processPrintJobs(){
