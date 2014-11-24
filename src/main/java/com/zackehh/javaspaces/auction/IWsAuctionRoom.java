@@ -1,6 +1,7 @@
 package com.zackehh.javaspaces.auction;
 
 import com.zackehh.javaspaces.printer.IWsQueueItem;
+import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
@@ -59,6 +60,7 @@ public class IWsAuctionRoom extends JFrame {
 
         initComponents();
         pack();
+        setResizable(false);
         setVisible(true);
 
         new Thread(new Runnable(){
@@ -71,17 +73,21 @@ public class IWsAuctionRoom extends JFrame {
                 while(true) {
                     try {
                         IWsLot template = new IWsLot(lots.size() + 1, null, null, null);
-                        IWsLot latestLot = (IWsLot) space.read(template, null, 3000);
+                        IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
                         if (latestLot == null) {
-                            Thread.sleep(5000);
+                            Thread.sleep(Constants.POLLING_INTERVAL);
                         } else {
                             lots.add(latestLot);
-                            model.addRow(new Object[]{latestLot.getId(), latestLot.getItemName(), latestLot.getCurrentPrice()});
+                            model.addRow(new Object[]{
+                                latestLot.getId(),
+                                latestLot.getItemName(),
+                                latestLot.getCurrentPrice()
+                            });
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
                         try {
-                            Thread.sleep(5000);
+                            Thread.sleep(Constants.POLLING_INTERVAL);
                         } catch(Exception ex){
                             // no-op
                         }
@@ -143,12 +149,6 @@ public class IWsAuctionRoom extends JFrame {
         };
 
         String[][] dataValues = new String[lots.size()][columns.length + 1];
-
-        for(int iY = 0; iY < lots.size(); iY++){
-            dataValues[iY][0] = lots.get(iY).getId().toString();
-            dataValues[iY][1] = lots.get(iY).getItemName();
-            dataValues[iY][2] = lots.get(iY).getCurrentPrice().toString();
-        }
 
         lotTable = new JTable();
 
@@ -215,7 +215,7 @@ public class IWsAuctionRoom extends JFrame {
                 }
 
                 try {
-                    IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, 3000);
+                    IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
 
                     System.out.println("Secretary state: " + secretary.jobNumber);
 

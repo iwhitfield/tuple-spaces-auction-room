@@ -20,4 +20,20 @@ public class IWsBid implements Entry {
         this.isPublic = isPublic;
     }
 
+    public Integer getId(){
+        return id;
+    }
+
+    public String getItemName(){
+        return itemName;
+    }
+
+    public Double getMaxPrice(){
+        return maxPrice;
+    }
+
+    public Boolean isPublic(){
+        return isPublic;
+    }
+
 }
