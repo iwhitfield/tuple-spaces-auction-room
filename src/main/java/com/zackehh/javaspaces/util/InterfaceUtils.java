@@ -89,30 +89,12 @@ public class InterfaceUtils {
         for(int iY = 0; iY < bids.size(); iY++){
             final IWsBid bid = bids.get(iY);
             values.add(iY, new Vector<String>(){{
-                add(bid.getId().toString());
                 add(bid.getUserId());
                 add(InterfaceUtils.getDoubleAsCurrency(bid.getMaxPrice()));
             }});
         }
 
         return values;
-    }
-
-    public static String[][] getBidMatrix(IWsLot lot){
-        ArrayList<IWsBid> bids = getBidHistory(lot);
-
-        String[][] dataValues = new String[bids.size()][2];
-
-        for(int iY = 0; iY < bids.size(); iY++){
-            IWsBid bid = bids.get(iY);
-            dataValues[iY] = new String[] {
-                bid.getId().toString(),
-                bid.getUserId(),
-                bid.getMaxPrice().toString()
-            };
-        }
-
-        return dataValues;
     }
 
     /**

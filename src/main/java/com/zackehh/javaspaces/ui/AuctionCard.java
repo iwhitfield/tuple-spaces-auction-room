@@ -131,9 +131,10 @@ public class AuctionCard extends JPanel {
 
                 String itemName = itemNameIn.getText();
                 String itemDescription = itemDescriptionIn.getText();
-                Double startingPrice = InterfaceUtils.getTextAsNumber(startingPriceIn).doubleValue();
+                Number startingPrice = InterfaceUtils.getTextAsNumber(startingPriceIn);
+                Double potentialDouble = startingPrice == null ? 0 : startingPrice.doubleValue();
 
-                if(startingPrice == null || startingPrice == 0){
+                if(startingPrice == null || potentialDouble == 0){
                     resultTextOut.setText("Invalid price!");
                     return;
                 }
@@ -142,7 +143,7 @@ public class AuctionCard extends JPanel {
                     IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
 
                     int jobNumber = secretary.addNewJob();
-                    IWsLot newLot = new IWsLot(jobNumber, UserUtils.getCurrentUser(), null, itemName, startingPrice, itemDescription);
+                    IWsLot newLot = new IWsLot(jobNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription);
 
                     space.write(newLot, null, Lease.FOREVER);
                     space.write(secretary, null, Lease.FOREVER);

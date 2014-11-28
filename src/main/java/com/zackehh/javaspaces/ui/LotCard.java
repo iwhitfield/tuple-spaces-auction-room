@@ -26,6 +26,8 @@ public class LotCard extends JPanel {
     private final JTable bidTable;
     private Vector<Vector<String>> bidHistory;
 
+    private JLabel currentPrice;
+
     public LotCard(final JPanel cards, final IWsLot lot) {
         super();
 
@@ -55,7 +57,7 @@ public class LotCard extends JPanel {
                 String bidString = JOptionPane.showInputDialog(null, " Please place your bid: ", null);
                 if(bidString != null){
                     Double bid;
-                    if(bidString.matches(Constants.CURRENCY_REGEX) && (bid = Double.parseDouble(bidString)) > 0){
+                    if(bidString.matches(Constants.CURRENCY_REGEX) && (bid = Double.parseDouble(bidString)) > 0 && bid > lot.getCurrentPrice()){
                         try {
                             JavaSpace space = SpaceUtils.getSpace();
 
@@ -63,9 +65,21 @@ public class LotCard extends JPanel {
                             IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null);
                             IWsLot updatedLot = (IWsLot) space.take(template, null, Constants.SPACE_TIMEOUT);
 
+                            if(updatedLot.currentPrice >= bid){
+                                JOptionPane.showMessageDialog(null, "Oh dear, someone already bid higher!");
+                                space.write(secretary, null, Lease.FOREVER);
+                                space.write(updatedLot, null, Lease.FOREVER);
+                                refreshBidHistory(bid);
+                                return;
+                            }
+
                             int bidNumber = secretary.addNewJob();
 
                             updatedLot.bidList += "," + bidNumber;
+                            updatedLot.currentPrice = bid;
+
+                            lot.bidList += "," + bidNumber;
+                            lot.currentPrice = bid;
 
                             final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, true);
 
@@ -73,7 +87,7 @@ public class LotCard extends JPanel {
                             space.write(secretary, null, Lease.FOREVER);
                             space.write(updatedLot, null, Lease.FOREVER);
 
-                            refreshBidHistory();
+                            refreshBidHistory(bid);
                         } catch(Exception e) {
                             System.err.println("Error when adding lot to the space: " + e);
                             e.printStackTrace();
@@ -92,13 +106,12 @@ public class LotCard extends JPanel {
             "ID",
             "User ID",
             "Item Name",
-            "Item Description",
-            "Current Price"
+            "Item Description"
         };
 
         int numPairs = labels.length;
 
-        JPanel p = new JPanel(new GridLayout(numPairs, 2));
+        JPanel p = new JPanel(new GridLayout(numPairs + 1, 2));
         p.setBorder(BorderFactory.createEmptyBorder(-8, 0, 10, 0));
 
         try {
@@ -112,23 +125,27 @@ public class LotCard extends JPanel {
 
                 String valueOfField = f.get(lot) + "";
 
-                if (label.contains("Price")) {
-                    valueOfField = InterfaceUtils.getDoubleAsCurrency(Double.parseDouble(valueOfField));
-                }
-
                 JLabel textLabel = new JLabel(valueOfField);
                 l.setLabelFor(textLabel);
                 p.add(textLabel);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+        JLabel currentPriceLabel = new JLabel("Current Price: ", SwingConstants.RIGHT);
+        currentPrice = new JLabel(
+            InterfaceUtils.getDoubleAsCurrency(Double.parseDouble(lot.getCurrentPrice().toString()))
+        );
+
+        currentPriceLabel.setLabelFor(currentPrice);
+
+        p.add(currentPriceLabel);
+        p.add(currentPrice);
+
         add(p);
 
         Vector<String> columnz = new Vector<String>(){{
-            add("Bid ID");
             add("Buyer ID");
             add("Bid Amount");
         }};
@@ -171,19 +188,14 @@ public class LotCard extends JPanel {
         add(itemListPanel, BorderLayout.SOUTH);
     }
 
-    private void refreshBidHistory(){
+    private void refreshBidHistory(Double bid){
+        currentPrice.setText(
+            InterfaceUtils.getDoubleAsCurrency(Double.parseDouble(bid.toString()))
+        );
         Vector<Vector<String>> refreshedList = InterfaceUtils.getVectorBidMatrix(lot);
-        int x = refreshedList.size() - 1;
-        while(x > -1){
-            if(bidHistory.size() <= x){
-                bidHistory.add(refreshedList.get(x));
-            } else {
-                if(!refreshedList.get(x).get(0).matches(bidHistory.get(x).get(0))){
-                    bidHistory.add(x + 1, refreshedList.get(x));
-                    x = -1;
-                }
-            }
-            x--;
+        bidHistory.clear();
+        for(Vector<String> newBid : refreshedList){
+            bidHistory.add(newBid);
         }
         bidTable.revalidate();
     }

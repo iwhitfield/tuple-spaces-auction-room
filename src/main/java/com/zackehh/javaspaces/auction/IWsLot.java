@@ -1,5 +1,7 @@
 package com.zackehh.javaspaces.auction;
 
+import com.zackehh.javaspaces.util.Constants;
+import com.zackehh.javaspaces.util.SpaceUtils;
 import net.jini.core.entry.*;
 
 public class IWsLot implements Entry {
