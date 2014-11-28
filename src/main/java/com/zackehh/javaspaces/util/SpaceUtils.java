@@ -9,7 +9,12 @@ import net.jini.core.lookup.ServiceTemplate;
 
 public class SpaceUtils {
 
+	private static JavaSpace space;
+
 	public static JavaSpace getSpace(String hostname) {
+		if(space != null){
+			return space;
+		}
 		JavaSpace js = null;
 		try {
 			LookupLocator l = new LookupLocator("jini://" + hostname);
@@ -21,8 +26,13 @@ public class SpaceUtils {
             };
 
 			js = (JavaSpace) sr.lookup(new ServiceTemplate(null, classTemplate, null));
-            
-            System.out.println("Successfully connected!");
+
+			if(js != null){
+				System.out.println("Successfully connected!");
+				space = js;
+			} else {
+				System.err.println("Unable to verify space connection");
+			}
 		} catch (Exception e) {
 			System.err.println("Error: " + e);
 		}
@@ -56,7 +66,8 @@ public class SpaceUtils {
 	}
 
 	public static TransactionManager getManager() {
-		return getManager("waterloo");
+		return getManager("localhost");
 	}
+
 }
 
