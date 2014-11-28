@@ -25,7 +25,7 @@ public class AuctionCard extends JPanel {
     private JLabel resultTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
     private JPanel bidListingPanel, fieldInputPanel;
     private JScrollPane itemListPanel;
-    private JTable lotTable;
+    private static JTable lotTable;
     private JTextArea itemListOut;
     private JTextField itemNameIn, startingPriceIn, itemDescriptionIn;
     private JResultText resultTextOut;
@@ -100,7 +100,7 @@ public class AuctionCard extends JPanel {
                 if(event.getClickCount() == 2){
                     System.out.println("Selected ID: " + lots.get(row).getId() +
                             ", Item Name: " + lots.get(row).getItemName());
-                    cards.add(new LotCard(cards, lots.get(row)), Constants.BID_CARD);
+                    cards.add(new LotCard(cards, lots.get(row), row), Constants.BID_CARD);
                     CardLayout cl = (CardLayout)(cards.getLayout());
                     cl.show(cards, Constants.BID_CARD);
                 }
@@ -160,7 +160,7 @@ public class AuctionCard extends JPanel {
         add(bidListingPanel, BorderLayout.SOUTH);
     }
 
-    public DefaultTableModel getTableModel(){
+    public static DefaultTableModel getTableModel(){
         return ((DefaultTableModel) lotTable.getModel());
     }
 

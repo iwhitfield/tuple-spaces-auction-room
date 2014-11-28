@@ -1,6 +1,7 @@
 package com.zackehh.javaspaces.auction;
 
 import com.zackehh.javaspaces.ui.AuctionCard;
+import com.zackehh.javaspaces.ui.LotCard;
 import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
@@ -24,7 +25,7 @@ public class IWsAuctionRoom extends JFrame {
     private ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
     private JavaSpace space;
 
-    private JPanel cards;
+    private static JPanel cards;
     private AuctionCard auctionCard;
 
     public static void main(String[] args) {
@@ -125,5 +126,4 @@ public class IWsAuctionRoom extends JFrame {
 
         cp.add(cards);
     }
-
 }

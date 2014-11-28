@@ -1,6 +1,7 @@
 package com.zackehh.javaspaces.auction;
 
 import com.zackehh.javaspaces.util.Constants;
+import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import net.jini.core.entry.*;
 
@@ -52,5 +53,14 @@ public class IWsLot implements Entry {
             return null;
         }
         return Integer.parseInt(ids[ids.length - 1]);
+    }
+
+    public Object[] asObjectArray(){
+        return new Object[]{
+            id,
+            itemName,
+            userId,
+            InterfaceUtils.getDoubleAsCurrency(currentPrice)
+        };
     }
 }

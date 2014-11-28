@@ -28,7 +28,7 @@ public class LotCard extends JPanel {
 
     private JLabel currentPrice;
 
-    public LotCard(final JPanel cards, final IWsLot lot) {
+    public LotCard(final JPanel cards, final IWsLot lot, final int index) {
         super();
 
         this.lot = lot;
@@ -73,13 +73,16 @@ public class LotCard extends JPanel {
                                 return;
                             }
 
-                            int bidNumber = secretary.addNewJob();
+                            int bidNumber = secretary.addBid();
 
                             updatedLot.bidList += "," + bidNumber;
                             updatedLot.currentPrice = bid;
 
                             lot.bidList += "," + bidNumber;
                             lot.currentPrice = bid;
+
+                            AuctionCard.getTableModel().removeRow(index);
+                            AuctionCard.getTableModel().insertRow(index, lot.asObjectArray());
 
                             final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, true);
 
