@@ -160,7 +160,7 @@ public class AuctionCard extends JPanel {
         add(bidListingPanel, BorderLayout.SOUTH);
     }
 
-    public static DefaultTableModel getTableModel(){
+    public DefaultTableModel getTableModel(){
         return ((DefaultTableModel) lotTable.getModel());
     }
 

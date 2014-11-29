@@ -6,7 +6,13 @@ import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
+import net.jini.core.event.RemoteEvent;
+import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
+import net.jini.export.Exporter;
+import net.jini.jeri.BasicILFactory;
+import net.jini.jeri.BasicJeriExporter;
+import net.jini.jeri.tcp.TcpServerEndpoint;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
@@ -20,7 +26,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 
-public class IWsAuctionRoom extends JFrame {
+public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
 
     private ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
     private JavaSpace space;
@@ -60,47 +66,52 @@ public class IWsAuctionRoom extends JFrame {
             System.exit(1);
         }
 
+        Exporter myDefaultExporter =
+                new BasicJeriExporter(TcpServerEndpoint.getInstance(0),
+                        new BasicILFactory(), false, true);
+
+        RemoteEventListener listener;
+        try {
+            // register this as a remote object
+            // and get a reference to the 'stub'
+            listener = (RemoteEventListener) myDefaultExporter.export(this);
+
+            // add the listener
+            space.notify(new IWsLot(), null, listener, Lease.FOREVER, null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         initComponents();
         pack();
         setResizable(false);
         setVisible(true);
 
-        new Thread(new Runnable(){
-
-            DefaultTableModel model = auctionCard.getTableModel();
-
+        new Thread(new Runnable() {
             @Override
             public void run() {
-
-                while(true) {
+                DefaultTableModel model = auctionCard.getTableModel();
+                IWsLot latestLot = null;
+                do {
                     try {
                         IWsLot template = new IWsLot(lots.size() + 1, null, null, null, null, null);
-                        IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
-                        if (latestLot == null) {
-                            Thread.sleep(Constants.POLLING_INTERVAL);
-                        } else {
+                        latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+                        if (latestLot != null) {
                             lots.add(latestLot);
                             model.addRow(new Object[]{
-                                latestLot.getId(),
-                                latestLot.getItemName(),
-                                latestLot.getUserId(),
-                                InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice())
+                                    latestLot.getId(),
+                                    latestLot.getItemName(),
+                                    latestLot.getUserId(),
+                                    InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice())
                             });
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
-                        try {
-                            Thread.sleep(Constants.POLLING_INTERVAL);
-                        } catch(Exception ex){
-                            // no-op
-                        }
                     }
-                }
-
+                } while(latestLot != null);
             }
-
         }).start();
-
     }
 
     /**
@@ -125,5 +136,33 @@ public class IWsAuctionRoom extends JFrame {
         cards.add(auctionCard, Constants.AUCTION_CARD);
 
         cp.add(cards);
+    }
+
+    @Override
+    public void notify(RemoteEvent ev) {
+        DefaultTableModel model = auctionCard.getTableModel();
+
+        try {
+            IWsSecretary secretary = (IWsSecretary) space.read(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
+            IWsLot template = new IWsLot(secretary.jobNumber, null, null, null, null, null);
+            IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+
+            Object[] insertion = new Object[]{
+                    latestLot.getId(),
+                    latestLot.getItemName(),
+                    latestLot.getUserId(),
+                    InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice())
+            };
+
+            if(latestLot.getId() > model.getRowCount()) {
+                lots.add(latestLot);
+                model.addRow(insertion);
+            } else {
+                lots.set(latestLot.getId() - 1, latestLot);
+                model.setValueAt(insertion[3], latestLot.getId() - 1, 3);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

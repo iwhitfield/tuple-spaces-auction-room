@@ -7,7 +7,13 @@ import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
+import net.jini.core.event.RemoteEvent;
+import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
+import net.jini.export.Exporter;
+import net.jini.jeri.BasicILFactory;
+import net.jini.jeri.BasicJeriExporter;
+import net.jini.jeri.tcp.TcpServerEndpoint;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
@@ -20,7 +26,7 @@ import java.awt.event.MouseEvent;
 import java.lang.reflect.Field;
 import java.util.Vector;
 
-public class LotCard extends JPanel {
+public class LotCard extends JPanel implements RemoteEventListener {
 
     private final IWsLot lot;
     private final JTable bidTable;
@@ -28,7 +34,7 @@ public class LotCard extends JPanel {
 
     private JLabel currentPrice;
 
-    public LotCard(final JPanel cards, final IWsLot lot, final int index) {
+    public LotCard(final JPanel cards, final IWsLot lot) {
         super();
 
         this.lot = lot;
@@ -36,6 +42,23 @@ public class LotCard extends JPanel {
         this.bidTable = new JTable();
 
         setLayout(new BorderLayout());
+
+        Exporter myDefaultExporter =
+                new BasicJeriExporter(TcpServerEndpoint.getInstance(0),
+                        new BasicILFactory(), false, true);
+
+        RemoteEventListener listener;
+        try {
+            // register this as a remote object
+            // and get a reference to the 'stub'
+            listener = (RemoteEventListener) myDefaultExporter.export(this);
+
+            // add the listener
+            SpaceUtils.getSpace().notify(new IWsBid(null, null, lot.getId(), null, null), null, listener, Lease.FOREVER, null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
@@ -63,34 +86,20 @@ public class LotCard extends JPanel {
 
                             IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
                             IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null);
-                            IWsLot updatedLot = (IWsLot) space.take(template, null, Constants.SPACE_TIMEOUT);
 
-                            if(updatedLot.currentPrice >= bid){
-                                JOptionPane.showMessageDialog(null, "Oh dear, someone already bid higher!");
-                                space.write(secretary, null, Lease.FOREVER);
-                                space.write(updatedLot, null, Lease.FOREVER);
-                                refreshBidHistory(bid);
-                                return;
-                            }
+                            // dispose of the previous lot item
+                            IWsLot updatedLot = (IWsLot) space.take(template, null, Constants.SPACE_TIMEOUT);
 
                             int bidNumber = secretary.addBid();
 
                             updatedLot.bidList += "," + bidNumber;
                             updatedLot.currentPrice = bid;
 
-                            lot.bidList += "," + bidNumber;
-                            lot.currentPrice = bid;
-
-                            AuctionCard.getTableModel().removeRow(index);
-                            AuctionCard.getTableModel().insertRow(index, lot.asObjectArray());
-
                             final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, true);
 
+                            space.write(updatedLot, null, Lease.FOREVER);
                             space.write(newBid, null, Lease.FOREVER);
                             space.write(secretary, null, Lease.FOREVER);
-                            space.write(updatedLot, null, Lease.FOREVER);
-
-                            refreshBidHistory(bid);
                         } catch(Exception e) {
                             System.err.println("Error when adding lot to the space: " + e);
                             e.printStackTrace();
@@ -191,16 +200,26 @@ public class LotCard extends JPanel {
         add(itemListPanel, BorderLayout.SOUTH);
     }
 
-    private void refreshBidHistory(Double bid){
-        currentPrice.setText(
-            InterfaceUtils.getDoubleAsCurrency(Double.parseDouble(bid.toString()))
-        );
-        Vector<Vector<String>> refreshedList = InterfaceUtils.getVectorBidMatrix(lot);
-        bidHistory.clear();
-        for(Vector<String> newBid : refreshedList){
-            bidHistory.add(newBid);
+    @Override
+    public void notify(RemoteEvent ev) {
+        try {
+            IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null);
+            IWsLot latestLot = (IWsLot) SpaceUtils.getSpace().read(template, null, Constants.SPACE_TIMEOUT);
+
+            IWsBid bidTemplate = new IWsBid(latestLot.getLatestBid(), null, null, null, null);
+            final IWsBid latestBid = (IWsBid) SpaceUtils.getSpace().read(bidTemplate, null, Constants.SPACE_TIMEOUT);
+
+            Vector<String> insertion = new Vector<String>(){{
+                add(latestBid.getUserId());
+                add(InterfaceUtils.getDoubleAsCurrency(latestBid.getMaxPrice()));
+            }};
+
+            bidHistory.add(0, insertion);
+            bidTable.revalidate();
+            currentPrice.setText(InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice()));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        bidTable.revalidate();
     }
 
 }
