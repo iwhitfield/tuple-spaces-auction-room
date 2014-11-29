@@ -2,8 +2,9 @@ package com.zackehh.javaspaces.ui;
 
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
-import com.zackehh.javaspaces.util.Constants;
+import com.zackehh.javaspaces.constants.Constants;
 import com.zackehh.javaspaces.util.InterfaceUtils;
+import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
@@ -21,6 +22,8 @@ import java.util.ArrayList;
 
 public class AuctionCard extends JPanel {
 
+    private final JavaSpace space;
+
     private JButton addJobButton;
     private JLabel resultTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
     private JPanel bidListingPanel, fieldInputPanel;
@@ -30,8 +33,10 @@ public class AuctionCard extends JPanel {
     private JTextField itemNameIn, startingPriceIn, itemDescriptionIn;
     private JResultText resultTextOut;
 
-    public AuctionCard(final JavaSpace space, final ArrayList<IWsLot> lots, final JPanel cards){
+    public AuctionCard(final ArrayList<IWsLot> lots, final JPanel cards){
         super(new BorderLayout());
+
+        this.space = SpaceUtils.getSpace();
 
         fieldInputPanel = new JPanel(new GridLayout(4, 2));
         fieldInputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -100,7 +105,7 @@ public class AuctionCard extends JPanel {
                 if(event.getClickCount() == 2){
                     System.out.println("Selected ID: " + lots.get(row).getId() +
                             ", Item Name: " + lots.get(row).getItemName());
-                    cards.add(new LotCard(cards, lots.get(row), row), Constants.BID_CARD);
+                    cards.add(new LotCard(cards, lots.get(row)), Constants.BID_CARD);
                     CardLayout cl = (CardLayout)(cards.getLayout());
                     cl.show(cards, Constants.BID_CARD);
                 }
@@ -142,12 +147,12 @@ public class AuctionCard extends JPanel {
                 try {
                     IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
 
-                    int jobNumber = secretary.addNewJob();
-                    IWsLot newLot = new IWsLot(jobNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription);
+                    int lotNumber = secretary.addNewLot();
+                    IWsLot newLot = new IWsLot(lotNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription);
 
                     space.write(newLot, null, Lease.FOREVER);
                     space.write(secretary, null, Lease.FOREVER);
-                    resultTextOut.setText("Added Lot #" + jobNumber + "!");
+                    resultTextOut.setText("Added Lot #" + lotNumber + "!");
                 } catch(Exception e) {
                     System.err.println("Error when adding lot to the space: " + e);
                     e.printStackTrace();

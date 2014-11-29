@@ -1,8 +1,9 @@
-package com.zackehh.javaspaces.auction;
+package com.zackehh.javaspaces;
 
+import com.zackehh.javaspaces.auction.IWsLot;
+import com.zackehh.javaspaces.auction.IWsSecretary;
 import com.zackehh.javaspaces.ui.AuctionCard;
-import com.zackehh.javaspaces.ui.LotCard;
-import com.zackehh.javaspaces.util.Constants;
+import com.zackehh.javaspaces.constants.Constants;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
@@ -17,13 +18,9 @@ import net.jini.space.JavaSpace;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
 
 public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
@@ -31,7 +28,6 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
     private ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
     private JavaSpace space;
 
-    private static JPanel cards;
     private AuctionCard auctionCard;
 
     public static void main(String[] args) {
@@ -129,9 +125,9 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
         Container cp = getContentPane();
         cp.setLayout(new BorderLayout());
 
-        cards = new JPanel(new CardLayout());
+        JPanel cards = new JPanel(new CardLayout());
 
-        auctionCard = new AuctionCard(space, lots, cards);
+        auctionCard = new AuctionCard(lots, cards);
 
         cards.add(auctionCard, Constants.AUCTION_CARD);
 
@@ -144,16 +140,10 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
 
         try {
             IWsSecretary secretary = (IWsSecretary) space.read(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
-            IWsLot template = new IWsLot(secretary.jobNumber, null, null, null, null, null);
+            IWsLot template = new IWsLot(secretary.getLotNumber(), null, null, null, null, null);
             IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
 
-            Object[] insertion = new Object[]{
-                    latestLot.getId(),
-                    latestLot.getItemName(),
-                    latestLot.getUserId(),
-                    InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice())
-            };
-
+            Object[] insertion = latestLot.asObjectArray();
             if(latestLot.getId() > model.getRowCount()) {
                 lots.add(latestLot);
                 model.addRow(insertion);

@@ -3,7 +3,7 @@ package com.zackehh.javaspaces.ui;
 import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
-import com.zackehh.javaspaces.util.Constants;
+import com.zackehh.javaspaces.constants.Constants;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
@@ -28,6 +28,7 @@ import java.util.Vector;
 
 public class LotCard extends JPanel implements RemoteEventListener {
 
+    private final JavaSpace space;
     private final IWsLot lot;
     private final JTable bidTable;
     private Vector<Vector<String>> bidHistory;
@@ -40,6 +41,8 @@ public class LotCard extends JPanel implements RemoteEventListener {
         this.lot = lot;
 
         this.bidTable = new JTable();
+
+        this.space = SpaceUtils.getSpace();
 
         setLayout(new BorderLayout());
 
@@ -82,18 +85,16 @@ public class LotCard extends JPanel implements RemoteEventListener {
                     Double bid;
                     if(bidString.matches(Constants.CURRENCY_REGEX) && (bid = Double.parseDouble(bidString)) > 0 && bid > lot.getCurrentPrice()){
                         try {
-                            JavaSpace space = SpaceUtils.getSpace();
-
                             IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
                             IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null);
 
                             // dispose of the previous lot item
                             IWsLot updatedLot = (IWsLot) space.take(template, null, Constants.SPACE_TIMEOUT);
 
-                            int bidNumber = secretary.addBid();
+                            int bidNumber = secretary.addNewBid();
 
-                            updatedLot.bidList += "," + bidNumber;
-                            updatedLot.currentPrice = bid;
+                            updatedLot.history += "," + bidNumber;
+                            updatedLot.price = bid;
 
                             final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, true);
 
@@ -204,14 +205,14 @@ public class LotCard extends JPanel implements RemoteEventListener {
     public void notify(RemoteEvent ev) {
         try {
             IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null);
-            IWsLot latestLot = (IWsLot) SpaceUtils.getSpace().read(template, null, Constants.SPACE_TIMEOUT);
+            IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
 
             IWsBid bidTemplate = new IWsBid(latestLot.getLatestBid(), null, null, null, null);
-            final IWsBid latestBid = (IWsBid) SpaceUtils.getSpace().read(bidTemplate, null, Constants.SPACE_TIMEOUT);
+            final IWsBid latestBid = (IWsBid) space.read(bidTemplate, null, Constants.SPACE_TIMEOUT);
 
             Vector<String> insertion = new Vector<String>(){{
                 add(latestBid.getUserId());
-                add(InterfaceUtils.getDoubleAsCurrency(latestBid.getMaxPrice()));
+                add(InterfaceUtils.getDoubleAsCurrency(latestBid.getPrice()));
             }};
 
             bidHistory.add(0, insertion);
