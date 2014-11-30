@@ -7,7 +7,11 @@ import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.lease.Lease;
+import net.jini.core.transaction.Transaction;
+import net.jini.core.transaction.TransactionFactory;
+import net.jini.core.transaction.server.TransactionManager;
 import net.jini.space.JavaSpace;
+import sun.jvm.hotspot.memory.Space;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -23,18 +27,21 @@ import java.util.ArrayList;
 public class AuctionCard extends JPanel {
 
     private final JavaSpace space;
+    private final TransactionManager manager;
 
-    private JButton addJobButton;
-    private JLabel resultTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
-    private JPanel bidListingPanel, fieldInputPanel;
-    private JScrollPane itemListPanel;
+    private final JButton addJobButton;
+    private final JLabel resultTextLabel, itemNameLabel, startingPriceLabel, itemDescriptionLabel;
+    private final JPanel bidListingPanel, fieldInputPanel;
+    private final JScrollPane itemListPanel;
     private static JTable lotTable;
-    private JTextArea itemListOut;
-    private JTextField itemNameIn, startingPriceIn, itemDescriptionIn;
-    private JResultText resultTextOut;
+    private final JTextArea itemListOut;
+    private final JTextField itemNameIn, startingPriceIn, itemDescriptionIn;
+    private final JResultText resultTextOut;
 
     public AuctionCard(final ArrayList<IWsLot> lots, final JPanel cards){
         super(new BorderLayout());
+
+        this.manager = SpaceUtils.getManager();
 
         this.space = SpaceUtils.getSpace();
 
@@ -63,11 +70,6 @@ public class AuctionCard extends JPanel {
 
         itemListOut = new JTextArea(30, 30);
         itemListOut.setEditable(false);
-        itemListPanel = new JScrollPane(
-                itemListOut,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-        );
 
         String[] columns = new String[] {
             "Lot ID", "Item Name", "Seller ID", "Current Price"
@@ -121,7 +123,11 @@ public class AuctionCard extends JPanel {
                 .setHorizontalAlignment(SwingConstants.CENTER);
 
         // Add the table to a scrolling pane
-        itemListPanel = new JScrollPane(lotTable);
+        itemListPanel = new JScrollPane(
+            lotTable,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
 
         add(itemListPanel, BorderLayout.CENTER);
 
@@ -144,18 +150,30 @@ public class AuctionCard extends JPanel {
                     return;
                 }
 
+                Transaction transaction = null;
                 try {
-                    IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
+                    Transaction.Created trc = TransactionFactory.create(manager, 3000);
+                    transaction = trc.transaction;
+
+                    IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), transaction, Constants.SPACE_TIMEOUT);
 
                     int lotNumber = secretary.addNewLot();
                     IWsLot newLot = new IWsLot(lotNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription);
 
-                    space.write(newLot, null, Lease.FOREVER);
-                    space.write(secretary, null, Lease.FOREVER);
+                    space.write(newLot, transaction, Lease.FOREVER);
+                    space.write(secretary, transaction, Lease.FOREVER);
+
+                    transaction.commit();
+
                     resultTextOut.setText("Added Lot #" + lotNumber + "!");
                 } catch(Exception e) {
                     System.err.println("Error when adding lot to the space: " + e);
                     e.printStackTrace();
+                    try {
+                        transaction.abort();
+                    } catch(Exception e2) {
+                        e2.printStackTrace();
+                    }
                 }
 
             }

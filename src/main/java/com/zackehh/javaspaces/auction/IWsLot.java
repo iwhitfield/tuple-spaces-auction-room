@@ -49,7 +49,7 @@ public class IWsLot implements Entry {
     public IWsLot(){ }
 
     /**
-     * Templating constructor, used to ensure all fields can be set
+     * Template constructor, used to ensure all fields can be set
      * for use when matching specific fields across the space.
      *
      * @param id            the id of this item
@@ -108,6 +108,7 @@ public class IWsLot implements Entry {
      *
      * @return String       the item description
      */
+    @SuppressWarnings("unused")
     public String getItemDescription() { return description; }
 
     /**

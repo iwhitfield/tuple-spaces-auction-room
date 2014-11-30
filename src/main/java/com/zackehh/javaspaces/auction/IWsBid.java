@@ -1,5 +1,6 @@
 package com.zackehh.javaspaces.auction;
 
+import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.entry.*;
 
 /**
@@ -42,7 +43,7 @@ public class IWsBid implements Entry {
     public IWsBid(){ }
 
     /**
-     * Templating constructor, used to ensure all fields can be set
+     * Template constructor, used to ensure all fields can be set
      * for use when matching specific fields across the space.
      *
      * @param id            the id of this bid
@@ -102,6 +103,16 @@ public class IWsBid implements Entry {
      */
     public Boolean isPublic(){
         return visible;
+    }
+
+    /**
+     * Shorthand for checking if this bid should be
+     * visible to the current user.
+     *
+     * @return true         if the bid is anonymous
+     */
+    public Boolean isAnonymous(){
+        return !isPublic() && !UserUtils.getCurrentUser().matches(getUserId());
     }
 
     /**

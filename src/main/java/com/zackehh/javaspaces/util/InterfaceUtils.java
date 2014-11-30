@@ -73,7 +73,7 @@ public class InterfaceUtils {
             IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null);
             IWsLot refreshedLot = (IWsLot) space.read(lotTemplate, null, Constants.SPACE_TIMEOUT);
 
-            String[] bids = refreshedLot.getBidList().split(",");
+            String[] bids = refreshedLot.getHistory().split(",");
 
             if(bids.length <= 1){
                 return bidHistory;
@@ -83,7 +83,7 @@ public class InterfaceUtils {
                 IWsBid template = new IWsBid(Integer.parseInt(bids[i]), null, lot.getId(), null, null);
                 IWsBid bidItem = ((IWsBid) space.read(template, null, Constants.SPACE_TIMEOUT));
 
-                if(!bidItem.isPublic() && !UserUtils.getCurrentUser().matches(bidItem.getUserId())) {
+                if(!bidItem.isAnonymous()) {
                     bidItem.setUserId("Anonymous Buyer");
                 }
 
@@ -95,7 +95,7 @@ public class InterfaceUtils {
         Collections.sort(bidHistory, new Comparator<IWsBid>() {
             @Override
             public int compare(IWsBid bid1, IWsBid bid2) {
-                return bid2.getMaxPrice().compareTo(bid1.getMaxPrice());
+                return bid2.getPrice().compareTo(bid1.getPrice());
             }
         });
         return bidHistory;
@@ -118,7 +118,7 @@ public class InterfaceUtils {
             final IWsBid bid = bids.get(iY);
             values.add(iY, new Vector<String>(){{
                 add(bid.getUserId());
-                add(InterfaceUtils.getDoubleAsCurrency(bid.getMaxPrice()));
+                add(InterfaceUtils.getDoubleAsCurrency(bid.getPrice()));
             }});
         }
 

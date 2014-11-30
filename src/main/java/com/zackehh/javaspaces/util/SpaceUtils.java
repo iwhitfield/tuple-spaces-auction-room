@@ -31,7 +31,7 @@ public final class SpaceUtils {
 
 	/**
 	 * Searches for a space with the given hostname on the network. Stores
-	 * in the class property `space` to avoid repeated lookups. Returns null
+	 * in the class property `space` to avoid repeated look-ups. Returns null
 	 * if no space can be found, and leaves a stack trace for debugging.
 	 *
 	 * @param  hostname         the hostname to lookup
@@ -77,7 +77,7 @@ public final class SpaceUtils {
 
 	/**
 	 * Searches for a TransactionManager on the given hostname. Stores
-	 * in the class property `manager` to avoid repeated lookups. Returns null
+	 * in the class property `manager` to avoid repeated look-ups. Returns null
 	 * if no manager can be found, and leaves a stack trace for debugging.
 	 *
 	 * @param  hostname             the hostname to lookup

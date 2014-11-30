@@ -28,7 +28,7 @@ public class IWsSecretary implements Entry {
 
     /**
      * Takes a value for both id trackers. This is usually set to
-     * 0 as the only need to initalize a Secretary is if there is
+     * 0 as the only need to initialize a Secretary is if there is
      * none already in the space - i.e. there is no data.
      *
      * @param bidNumber     the bid to start on
@@ -37,16 +37,6 @@ public class IWsSecretary implements Entry {
     public IWsSecretary(int bidNumber, int lotNumber){
         this.bidNumber = bidNumber;
         this.lotNumber = lotNumber;
-    }
-
-    /**
-     * Getter for the lotNumber property. Returns the id of the
-     * latest lot to be added to the space.
-     *
-     * @return Integer      the lot id
-     */
-    public Integer getLotNumber(){
-        return lotNumber;
     }
 
     /**
@@ -60,14 +50,13 @@ public class IWsSecretary implements Entry {
     }
 
     /**
-     * Helper to increment the lotNumber value and return
-     * the new value. Used when a new lot will be added
-     * to the space.
+     * Getter for the lotNumber property. Returns the id of the
+     * latest lot to be added to the space.
      *
-     * @return Integer      the new lot id
+     * @return Integer      the lot id
      */
-    public Integer addNewLot(){
-        return ++lotNumber;
+    public Integer getLotNumber(){
+        return lotNumber;
     }
 
     /**
@@ -79,6 +68,17 @@ public class IWsSecretary implements Entry {
      */
     public Integer addNewBid(){
         return ++bidNumber;
+    }
+
+    /**
+     * Helper to increment the lotNumber value and return
+     * the new value. Used when a new lot will be added
+     * to the space.
+     *
+     * @return Integer      the new lot id
+     */
+    public Integer addNewLot(){
+        return ++lotNumber;
     }
 
 }

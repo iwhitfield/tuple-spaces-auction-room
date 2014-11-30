@@ -10,6 +10,9 @@ import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.event.RemoteEvent;
 import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
+import net.jini.core.transaction.Transaction;
+import net.jini.core.transaction.TransactionFactory;
+import net.jini.core.transaction.server.TransactionManager;
 import net.jini.export.Exporter;
 import net.jini.jeri.BasicILFactory;
 import net.jini.jeri.BasicJeriExporter;
@@ -23,24 +26,27 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Vector;
 
 public class LotCard extends JPanel implements RemoteEventListener {
 
+    private final TransactionManager manager;
     private final JavaSpace space;
-    private final IWsLot lot;
+    private IWsLot lot;
     private final JTable bidTable;
-    private Vector<Vector<String>> bidHistory;
+    private final Vector<Vector<String>> bidHistory;
 
-    private JLabel currentPrice;
+    private final JLabel currentPrice;
 
-    public LotCard(final JPanel cards, final IWsLot lot) {
+    public LotCard(final JPanel cards, final IWsLot lotForCard) {
         super();
 
-        this.lot = lot;
+        this.lot = lotForCard;
 
         this.bidTable = new JTable();
+
+        this.manager = SpaceUtils.getManager();
 
         this.space = SpaceUtils.getSpace();
 
@@ -57,7 +63,7 @@ public class LotCard extends JPanel implements RemoteEventListener {
             listener = (RemoteEventListener) myDefaultExporter.export(this);
 
             // add the listener
-            SpaceUtils.getSpace().notify(new IWsBid(null, null, lot.getId(), null, null), null, listener, Lease.FOREVER, null);
+            space.notify(new IWsBid(null, null, lot.getId(), null, null), null, listener, Lease.FOREVER, null);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -80,30 +86,55 @@ public class LotCard extends JPanel implements RemoteEventListener {
         placeBid.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
-                String bidString = JOptionPane.showInputDialog(null, " Please place your bid: ", null);
-                if(bidString != null){
+                JPanel modal = new JPanel(new GridLayout(2, 2));
+                JTextField bidEntry = new JTextField();
+                JCheckBox privateCheckBox = new JCheckBox();
+
+                modal.add(new JLabel("Bid Amount: "));
+                modal.add(bidEntry);
+                modal.add(new JLabel("Private Bid? "));
+                modal.add(privateCheckBox);
+
+                int result = JOptionPane.showConfirmDialog(null, modal,
+                        "Please enter your bid details:", JOptionPane.OK_CANCEL_OPTION);
+
+                if(result == JOptionPane.OK_OPTION){
+                    String bidString = bidEntry.getText();
                     Double bid;
                     if(bidString.matches(Constants.CURRENCY_REGEX) && (bid = Double.parseDouble(bidString)) > 0 && bid > lot.getCurrentPrice()){
+                        Transaction transaction = null;
                         try {
-                            IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
+                            Transaction.Created trc = TransactionFactory.create(manager, 3000);
+                            transaction = trc.transaction;
+
+                            IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), transaction, Constants.SPACE_TIMEOUT);
                             IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null);
 
                             // dispose of the previous lot item
-                            IWsLot updatedLot = (IWsLot) space.take(template, null, Constants.SPACE_TIMEOUT);
+                            IWsLot updatedLot = (IWsLot) space.take(template, transaction, Constants.SPACE_TIMEOUT);
 
                             int bidNumber = secretary.addNewBid();
 
                             updatedLot.history += "," + bidNumber;
                             updatedLot.price = bid;
 
-                            final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, true);
+                            final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, !privateCheckBox.isSelected());
 
-                            space.write(updatedLot, null, Lease.FOREVER);
-                            space.write(newBid, null, Lease.FOREVER);
-                            space.write(secretary, null, Lease.FOREVER);
+                            space.write(updatedLot, transaction, Lease.FOREVER);
+                            space.write(newBid, transaction, Lease.FOREVER);
+                            space.write(secretary, transaction, Lease.FOREVER);
+
+                            transaction.commit();
+
+                            lot = updatedLot;
                         } catch(Exception e) {
                             System.err.println("Error when adding lot to the space: " + e);
                             e.printStackTrace();
+                            try {
+                                transaction.abort();
+                            } catch(Exception e2) {
+                                e2.printStackTrace();
+                            }
                         }
                     } else {
                         JOptionPane.showMessageDialog(null, "Invalid bid entered!");
@@ -111,6 +142,7 @@ public class LotCard extends JPanel implements RemoteEventListener {
                 }
             }
         });
+
         panel.add(placeBid, BorderLayout.EAST);
 
         add(panel, BorderLayout.NORTH);
@@ -133,10 +165,9 @@ public class LotCard extends JPanel implements RemoteEventListener {
                 p.add(l);
                 Class<?> c = lot.getClass();
 
-                Field f = c.getDeclaredField(InterfaceUtils.toCamelCase(label, " "));
-                f.setAccessible(true);
+                Method method = c.getMethod(InterfaceUtils.toCamelCase("get " + label, " "));
 
-                String valueOfField = f.get(lot) + "";
+                String valueOfField = method.invoke(lot) + "";
 
                 JLabel textLabel = new JLabel(valueOfField);
                 l.setLabelFor(textLabel);
@@ -158,7 +189,7 @@ public class LotCard extends JPanel implements RemoteEventListener {
 
         add(p);
 
-        Vector<String> columnz = new Vector<String>(){{
+        Vector<String> columns = new Vector<String>(){{
             add("Buyer ID");
             add("Bid Amount");
         }};
@@ -172,7 +203,7 @@ public class LotCard extends JPanel implements RemoteEventListener {
             setHorizontalAlignment(JLabel.CENTER);
         }});
 
-        bidTable.setModel(new DefaultTableModel(bidHistory, columnz) {
+        bidTable.setModel(new DefaultTableModel(bidHistory, columns) {
 
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -211,7 +242,7 @@ public class LotCard extends JPanel implements RemoteEventListener {
             final IWsBid latestBid = (IWsBid) space.read(bidTemplate, null, Constants.SPACE_TIMEOUT);
 
             Vector<String> insertion = new Vector<String>(){{
-                add(latestBid.getUserId());
+                add(latestBid.isAnonymous() ? "Anonymous User" : latestBid.getUserId());
                 add(InterfaceUtils.getDoubleAsCurrency(latestBid.getPrice()));
             }};
 

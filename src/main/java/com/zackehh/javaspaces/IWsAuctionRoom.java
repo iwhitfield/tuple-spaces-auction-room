@@ -25,8 +25,8 @@ import java.util.ArrayList;
 
 public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
 
-    private ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
-    private JavaSpace space;
+    private final ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
+    private final JavaSpace space;
 
     private AuctionCard auctionCard;
 
@@ -47,7 +47,7 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
     public IWsAuctionRoom() {
         space = SpaceUtils.getSpace();
         if (space == null){
-            System.err.println("Failed to find the javaspace");
+            System.err.println("Failed to find the JavaSpace");
             System.exit(1);
         }
 
