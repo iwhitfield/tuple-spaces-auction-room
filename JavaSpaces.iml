@@ -12,10 +12,10 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: net.jini:jsk-lib:2.2.2" level="project" />
-    <orderEntry type="library" name="Maven: net.jini:jsk-platform:2.2.2" level="project" />
-    <orderEntry type="library" name="Maven: net.jini:jsk-resources:2.2.2" level="project" />
     <orderEntry type="library" name="Maven: net.jini:jsk-dl:2.2.2" level="project" />
     <orderEntry type="library" name="Maven: net.jini:jsk-policy:2.2.2" level="project" />
+    <orderEntry type="library" name="Maven: net.jini:jsk-platform:2.2.2" level="project" />
+    <orderEntry type="library" name="Maven: net.jini:jsk-resources:2.2.2" level="project" />
     <orderEntry type="library" name="Maven: net.jini.lookup:serviceui:2.2.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.river:mahalo:2.2.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.river:mahalo-dl:2.2.2" level="project" />
@@ -32,4 +32,3 @@
     <orderEntry type="library" name="Maven: org.apache.river:norm-dl:2.2.2" level="project" />
   </component>
 </module>
-

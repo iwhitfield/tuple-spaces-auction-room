@@ -2,18 +2,11 @@ package com.zackehh.javaspaces;
 
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
-import com.zackehh.javaspaces.ui.AuctionCard;
+import com.zackehh.javaspaces.ui.cards.AuctionCard;
 import com.zackehh.javaspaces.constants.Constants;
-import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
-import net.jini.core.event.RemoteEvent;
-import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
-import net.jini.export.Exporter;
-import net.jini.jeri.BasicILFactory;
-import net.jini.jeri.BasicJeriExporter;
-import net.jini.jeri.tcp.TcpServerEndpoint;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
@@ -23,7 +16,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
-public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
+public class AuctionRoom extends JFrame {
 
     private final ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
     private final JavaSpace space;
@@ -39,12 +32,13 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
             System.exit(1);
         }
 
+        SpaceUtils.setHostname(args.length == 0 ? "localhost" : args[0]);
         UserUtils.setCurrentUser(userId);
 
-        new IWsAuctionRoom();
+        new AuctionRoom();
     }
 
-    public IWsAuctionRoom() {
+    public AuctionRoom() {
         space = SpaceUtils.getSpace();
         if (space == null){
             System.err.println("Failed to find the JavaSpace");
@@ -62,23 +56,6 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
             System.exit(1);
         }
 
-        Exporter myDefaultExporter =
-                new BasicJeriExporter(TcpServerEndpoint.getInstance(0),
-                        new BasicILFactory(), false, true);
-
-        RemoteEventListener listener;
-        try {
-            // register this as a remote object
-            // and get a reference to the 'stub'
-            listener = (RemoteEventListener) myDefaultExporter.export(this);
-
-            // add the listener
-            space.notify(new IWsLot(), null, listener, Lease.FOREVER, null);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         initComponents();
         pack();
         setResizable(false);
@@ -91,16 +68,11 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
                 IWsLot latestLot = null;
                 do {
                     try {
-                        IWsLot template = new IWsLot(lots.size() + 1, null, null, null, null, null);
+                        IWsLot template = new IWsLot(lots.size() + 1, null, null, null, null, null, null);
                         latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
                         if (latestLot != null) {
                             lots.add(latestLot);
-                            model.addRow(new Object[]{
-                                    latestLot.getId(),
-                                    latestLot.getItemName(),
-                                    latestLot.getUserId(),
-                                    InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice())
-                            });
+                            model.addRow(latestLot.asObjectArray());
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -132,27 +104,5 @@ public class IWsAuctionRoom extends JFrame implements RemoteEventListener {
         cards.add(auctionCard, Constants.AUCTION_CARD);
 
         cp.add(cards);
-    }
-
-    @Override
-    public void notify(RemoteEvent ev) {
-        DefaultTableModel model = auctionCard.getTableModel();
-
-        try {
-            IWsSecretary secretary = (IWsSecretary) space.read(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
-            IWsLot template = new IWsLot(secretary.getLotNumber(), null, null, null, null, null);
-            IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
-
-            Object[] insertion = latestLot.asObjectArray();
-            if(latestLot.getId() > model.getRowCount()) {
-                lots.add(latestLot);
-                model.addRow(insertion);
-            } else {
-                lots.set(latestLot.getId() - 1, latestLot);
-                model.setValueAt(insertion[3], latestLot.getId() - 1, 3);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }

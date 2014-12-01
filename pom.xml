@@ -135,7 +135,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.zackehh.javaspaces.TestFrame</mainClass>
+                            <mainClass>com.zackehh.javaspaces.AuctionRoom</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

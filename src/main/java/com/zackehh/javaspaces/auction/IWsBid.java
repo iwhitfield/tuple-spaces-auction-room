@@ -111,8 +111,10 @@ public class IWsBid implements Entry {
      *
      * @return true         if the bid is anonymous
      */
-    public Boolean isAnonymous(){
-        return !isPublic() && !UserUtils.getCurrentUser().matches(getUserId());
+    public Boolean isAnonymous(IWsLot lot){
+        return  !isPublic() &&
+                !UserUtils.getCurrentUser().matches(getUserId()) &&
+                !UserUtils.getCurrentUser().matches(lot.getUserId());
     }
 
     /**

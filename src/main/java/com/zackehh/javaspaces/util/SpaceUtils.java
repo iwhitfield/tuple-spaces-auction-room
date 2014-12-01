@@ -1,5 +1,6 @@
 package com.zackehh.javaspaces.util;
 
+import net.jini.lease.LeaseRenewalManager;
 import net.jini.space.JavaSpace;
 import net.jini.core.transaction.server.TransactionManager;
 import java.rmi.RMISecurityManager;
@@ -14,6 +15,8 @@ public final class SpaceUtils {
 	 * This is to save overhead searching for a space multiple times.
 	 */
 	private static JavaSpace space;
+
+	private static String hostname = "localhost";
 
 	/**
 	 * Similar to the `space` property, this will store a found
@@ -72,7 +75,7 @@ public final class SpaceUtils {
 	 * @return JavaSpace        the connected space
 	 */
 	public static JavaSpace getSpace() {
-		return getSpace("localhost");
+		return getSpace(hostname);
 	}
 
 	/**
@@ -122,8 +125,11 @@ public final class SpaceUtils {
 	 * @return TransactionManager   the manager object
 	 */
 	public static TransactionManager getManager() {
-		return getManager("localhost");
+		return getManager(hostname);
 	}
 
+	public static void setHostname(String host){
+		hostname = host;
+	}
 }
 

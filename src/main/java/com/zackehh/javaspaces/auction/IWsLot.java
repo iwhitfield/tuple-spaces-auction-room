@@ -44,6 +44,11 @@ public class IWsLot implements Entry {
     public String userId;
 
     /**
+     * Whether the auction for this lot has finished.
+     */
+    public Boolean ended;
+
+    /**
      * Default constructor, used to match anything in the space.
      */
     public IWsLot(){ }
@@ -58,14 +63,16 @@ public class IWsLot implements Entry {
      * @param name          the name of the item
      * @param price         the current price of the item
      * @param description   a short description of the item
+     * @param ended         whether the lot has ended
      */
-    public IWsLot(Integer id, String userId, String history, String name, Double price, String description){
+    public IWsLot(Integer id, String userId, String history, String name, Double price, String description, Boolean ended){
         this.id = id;
         this.userId = userId;
         this.history = history;
         this.name = name;
         this.price = price;
         this.description = description;
+        this.ended = ended;
     }
 
     /**
@@ -121,6 +128,15 @@ public class IWsLot implements Entry {
     }
 
     /**
+     * Getter for the end state of the lot.
+     *
+     * @return true         if ended
+     */
+    public Boolean hasEnded(){
+        return ended;
+    }
+
+    /**
      * Helper to return the last bid associated with the lot.
      * This uses the bid history to return the numeric id of
      * the latest bid.
@@ -129,7 +145,7 @@ public class IWsLot implements Entry {
      */
     public Integer getLatestBid() {
         String[] ids = getHistory().split(",");
-        if(ids.length == 1){
+        if(ids.length < 1){
             return null;
         }
         return Integer.parseInt(ids[ids.length - 1]);
@@ -147,7 +163,8 @@ public class IWsLot implements Entry {
             id,
             name,
             userId,
-            InterfaceUtils.getDoubleAsCurrency(price)
+            InterfaceUtils.getDoubleAsCurrency(price),
+            hasEnded() ? "Ended" : "Running"
         };
     }
 }

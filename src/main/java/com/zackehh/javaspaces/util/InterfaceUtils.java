@@ -70,7 +70,7 @@ public class InterfaceUtils {
         ArrayList<IWsBid> bidHistory = new ArrayList<IWsBid>();
 
         try {
-            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null);
+            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null);
             IWsLot refreshedLot = (IWsLot) space.read(lotTemplate, null, Constants.SPACE_TIMEOUT);
 
             String[] bids = refreshedLot.getHistory().split(",");
@@ -83,7 +83,7 @@ public class InterfaceUtils {
                 IWsBid template = new IWsBid(Integer.parseInt(bids[i]), null, lot.getId(), null, null);
                 IWsBid bidItem = ((IWsBid) space.read(template, null, Constants.SPACE_TIMEOUT));
 
-                if(!bidItem.isAnonymous()) {
+                if(bidItem.isAnonymous(refreshedLot)) {
                     bidItem.setUserId("Anonymous Buyer");
                 }
 
