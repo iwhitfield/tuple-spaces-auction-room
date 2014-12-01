@@ -11,7 +11,6 @@ import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.event.RemoteEvent;
-import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
 
@@ -20,20 +19,68 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.lang.reflect.Method;
-import java.rmi.RemoteException;
 import java.util.Vector;
 
+/**
+ * The lot page which displays a list of bids associated
+ * with the chosen lot. This card allows the user to place
+ * a bid on an item, as well as allowing the seller to
+ * accept a bid or remove the current item from the auction.
+ */
 public class LotCard extends JPanel {
 
+    /**
+     * The common JavaSpace instance, stored privately.
+     */
     private final JavaSpace space;
-    private IWsLot lot;
-    private final BidTable bidTable;
-    private final Vector<Vector<String>> bidHistory;
-    private final JLabel acceptBid, placeBid;
 
+    /**
+     * The table of bids which will hold the the bid
+     * history of the current lot.
+     */
+    private final BidTable bidTable;
+
+    /**
+     * The lot that this card is associated with. This
+     * will not change throughout the lifecycle of the
+     * card.
+     */
+    private final IWsLot lot;
+
+    /**
+     * The history as reflected by the bidTable object.
+     * This is updating alongside the table to allow
+     * easy access to elements and easy table revalidation.
+     */
+    private final Vector<Vector<String>> bidHistory;
+
+    /**
+     * The label allowing the seller to accept a bid.
+     */
+    private final JLabel acceptBid;
+
+    /**
+     * The label displaying the current price of the lot.
+     */
     private final JLabel currentPrice;
 
-    public LotCard(final JPanel cards, final IWsLot lotForCard) {
+    /**
+     * The label allowing the user to place a bid.
+     */
+    private final JLabel placeBid;
+
+    /**
+     * Initializes a new card based on the given lot, which
+     * allows the user to place a bid on an item and allows
+     * the seller to accept a bid or remove a lot from the
+     * auction. This card only exists whilst the user remains
+     * on the card, it is destroyed when the user returns to
+     * the main AuctionCard.
+     *
+     * @param cards             the parent card layout
+     * @param lotForCard        the lot this card is for
+     */
+    public LotCard(final JPanel cards, IWsLot lotForCard) {
         super();
 
         this.lot = lotForCard;
@@ -84,6 +131,8 @@ public class LotCard extends JPanel {
                 acceptBid.setVisible(false);
             }
             panel.add(acceptBid, BorderLayout.EAST);
+
+            // TODO: Remove item
         } else {
             placeBid.addMouseListener(new PlaceBidListener(lot));
             panel.add(placeBid, BorderLayout.EAST);
@@ -152,13 +201,22 @@ public class LotCard extends JPanel {
         add(itemListPanel, BorderLayout.SOUTH);
     }
 
-    private class NewBidListener extends GenericNotificationListener implements RemoteEventListener {
+    /**
+     * Provides a way to update the UI based on new bids added
+     * to the lot. This will add a new bid to the table, as well
+     * as update the current price. This will also enable the
+     * seller to now accept the latest bid if it is the first
+     * bid added to the lot.
+     */
+    private class NewBidListener extends GenericNotificationListener {
 
-        public NewBidListener() throws RemoteException {
-            super();
-            listener = (RemoteEventListener) remoteExporter.export(this);
-        }
-
+        /**
+         * Updates the UI with the new bid added to the lot.
+         * This will keep all connected clients in sync with
+         * each other without the need for manual polling.
+         *
+         * @param ev        the remote event
+         */
         @Override
         public void notify(RemoteEvent ev) {
             try {
@@ -187,25 +245,32 @@ public class LotCard extends JPanel {
 
     }
 
-    private class LotChangeListener extends GenericNotificationListener implements RemoteEventListener {
+    /**
+     * Listens for changes to any lot items and disables
+     * any actions which should be blocked after an auction
+     * has ended. This is to ensure ended lots are updated
+     * across all connected clients and stay in sync.
+     */
+    private class LotChangeListener extends GenericNotificationListener {
 
-        public LotChangeListener() throws RemoteException {
-            super();
-            listener = (RemoteEventListener) remoteExporter.export(this);
-        }
-
+        /**
+         * Fetches the latest version of the lot from the space
+         * when notified and ensures that the auction has not
+         * been closed by the seller.
+         *
+         * @param ev        the remote event
+         */
         @Override
         public void notify(RemoteEvent ev) {
             try {
                 IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null);
                 final IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
-
                 if(latestLot.hasEnded()){
                     acceptBid.setVisible(false);
                     placeBid.setVisible(false);
+                    // TODO: Better handling here
+                    currentPrice.setText("ENDED");
                 }
-
-                currentPrice.setText("ENDED");
             } catch (Exception e) {
                 e.printStackTrace();
             }

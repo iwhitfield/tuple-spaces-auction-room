@@ -10,7 +10,6 @@ import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.event.RemoteEvent;
-import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionFactory;
@@ -22,17 +21,47 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 
+/**
+ * The main body of the application's UI. This card displays
+ * the list of lots in the auction currently, along with their
+ * information. Clicking a row allows the user to go to a card
+ * specifically based on the chosen lot to allow bid's etc.
+ * This card also provides a way for a user to add a new lot.
+ */
 public class AuctionCard extends JPanel {
 
+    /**
+     * The common JavaSpace instance, stored privately.
+     */
     private final JavaSpace space;
+
+    /**
+     * The common TransactionManager instance, stored privately.
+     */
     private final TransactionManager manager;
 
-    private ArrayList<IWsLot> lots;
-    private LotTable lotTable;
+    /**
+     * An ArrayList to keep track of the lots gathered from the
+     * space.
+     */
+    private final ArrayList<IWsLot> lots;
 
+    /**
+     * The table to keep track of any new lots entered.
+     */
+    private final LotTable lotTable;
+
+    /**
+     * Initialize a new AuctionCard with a list of initial lots
+     * to display. Provides access to the list of lots and the cards
+     * parent to enable addition/removal of cards representing the
+     * bid card.
+     *
+     * @param lots              the list of lot items
+     * @param cards             the cards layout
+     */
     public AuctionCard(final ArrayList<IWsLot> lots, final JPanel cards){
         super(new BorderLayout());
 
@@ -146,17 +175,36 @@ public class AuctionCard extends JPanel {
         }
     }
 
+    /**
+     * Returns the table model of lotTable for access outside
+     * this class. This is used to populate the table initially.
+     *
+     * @return DefaultTableModel    the table model
+     */
     public DefaultTableModel getTableModel(){
         return ((DefaultTableModel) lotTable.getModel());
     }
 
-    private class NewLotNotifier extends GenericNotificationListener implements RemoteEventListener {
+    /**
+     * The notifier for when a new lot enters the space. This
+     * contains handling for adding new lots to table, but
+     * also for marking existing lots as ended, or updating
+     * their current price.
+     */
+    private class NewLotNotifier extends GenericNotificationListener {
 
-        public NewLotNotifier() throws RemoteException { }
-
+        /**
+         * Overrides the parent notify method to allow the
+         * space to notify when a new lot is added to the
+         * number. This will either add the new lot to the
+         * table, or will update the existing record with
+         * the new information.
+         *
+         * @param ev        the remote event
+         */
         @Override
         public void notify(RemoteEvent ev) {
-            DefaultTableModel model = ((DefaultTableModel) lotTable.getModel());
+            DefaultTableModel model = getTableModel();
 
             try {
                 IWsSecretary secretary = (IWsSecretary) space.read(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);

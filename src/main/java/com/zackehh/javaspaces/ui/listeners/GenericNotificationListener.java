@@ -1,6 +1,8 @@
 package com.zackehh.javaspaces.ui.listeners;
 
+import net.jini.core.event.RemoteEvent;
 import net.jini.core.event.RemoteEventListener;
+import net.jini.core.event.UnknownEventException;
 import net.jini.export.Exporter;
 import net.jini.jeri.BasicILFactory;
 import net.jini.jeri.BasicJeriExporter;
@@ -13,7 +15,7 @@ import java.rmi.RemoteException;
  * easily, without having to explicitly define an Exporter.
  * This is inherited by any notifiers used inside the app.
  */
-public class GenericNotificationListener {
+public class GenericNotificationListener implements RemoteEventListener {
 
     /**
      * The exporter used to gain the listener.
@@ -32,10 +34,15 @@ public class GenericNotificationListener {
      *
      * @throws RemoteException
      */
-    public GenericNotificationListener() throws RemoteException {
-        remoteExporter =
-                new BasicJeriExporter(TcpServerEndpoint.getInstance(0),
-                        new BasicILFactory(), false, true);
+    public GenericNotificationListener() {
+        try{
+            remoteExporter =
+                    new BasicJeriExporter(TcpServerEndpoint.getInstance(0),
+                            new BasicILFactory(), false, true);
+            listener = (RemoteEventListener) remoteExporter.export(this);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -49,4 +56,16 @@ public class GenericNotificationListener {
         return listener;
     }
 
+    /**
+     * Implement notify so that we can inherit from this class
+     * more easily.
+     *
+     * @param remoteEvent               the remote event
+     * @throws UnknownEventException
+     * @throws RemoteException
+     */
+    @Override
+    public void notify(RemoteEvent remoteEvent) throws UnknownEventException, RemoteException {
+        super.notify();
+    }
 }
