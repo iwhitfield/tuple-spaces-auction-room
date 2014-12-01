@@ -16,13 +16,40 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
+/**
+ * The main entry into the program, which simply creates the
+ * base of the UI and sets up any required fields in the
+ * SpaceUtils and UserUtils classes. Also handles loading of
+ * the initial objects into the main AuctionCard view, via a
+ * background thread.
+ */
 public class AuctionRoom extends JFrame {
 
+    /**
+     * A list of lot items which are being tracked in the space.
+     */
     private final ArrayList<IWsLot> lots = new ArrayList<IWsLot>();
+
+    /**
+     * The common JavaSpace instance, stored privately.
+     */
     private final JavaSpace space;
 
+    /**
+     * The main AuctionCard, which is the overlay for the main
+     * window of the application.
+     */
     private AuctionCard auctionCard;
 
+    /**
+     * Main entry to the AuctionRoom. This prompts for a
+     * user's name as a prerequisite to using the application.
+     * Should this not be provided, the program will exit.
+     * This is where it is defined as to which hostname we
+     * will search for a JavaSpace in.
+     *
+     * @param args      the main program arguments
+     */
     public static void main(String[] args) {
 
         String userId = JOptionPane.showInputDialog(null, " Enter your student ID or username: ", null);
@@ -38,6 +65,15 @@ public class AuctionRoom extends JFrame {
         new AuctionRoom();
     }
 
+    /**
+     * Initializes a JavaSpace and ensures there is a
+     * Secretary in the space, as these preconditions
+     * are required to allow the user to continue. Should
+     * these conditions be met, the UI will be created.
+     * Existing lots are loaded in a background Thread and
+     * pushed to the list of lots displayed inside the
+     * AuctionCard.
+     */
     public AuctionRoom() {
         space = SpaceUtils.getSpace();
         if (space == null){
@@ -84,7 +120,9 @@ public class AuctionRoom extends JFrame {
 
     /**
      * Main body of UI creation. Creates main frame and
-     * attaches all needed listeners.
+     * attaches all needed listeners. Initializes the main
+     * CardLayout which will hold any cards created during
+     * execution of the program.
      */
     private void initComponents() {
         setTitle(Constants.APPLICATION_TITLE);

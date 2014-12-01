@@ -14,15 +14,45 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * Created by iwhitfield on 01/12/14.
+ * Listener for the LotCard views which allow a seller to
+ * accept a bid for their item. Uses Transactions to ensure
+ * that the bid is properly accepted in the space. This
+ * does not touch the UI, which will be handled by the use
+ * of notifier in the RemoteEventListener implementations.
  */
 public class AcceptBidListener extends MouseAdapter {
 
+    /**
+     * The label showing the current price of the lot, which
+     * by extension represents the latest bid amount.
+     */
     private JLabel currentPrice;
+
+    /**
+     * The lot which would be accepting the latest bid.
+     */
     private IWsLot lot;
+
+    /**
+     * The common JavaSpace instance, stored privately.
+     */
     private JavaSpace space;
+
+    /**
+     * The common TransactionManager instance, stored privately.
+     */
     private TransactionManager manager;
 
+    /**
+     * Initialize a new listener from a given lot. Passes in
+     * the currentPrice label which contains the latest price as
+     * seen by the user. This is used to display the text inside
+     * the modal dialog. Also initializes a JavaSpace and a
+     * TransactionManager.
+     *
+     * @param lot               the lot item to accept a bid for
+     * @param currentPrice      the currentPrice label
+     */
     public AcceptBidListener(IWsLot lot, JLabel currentPrice){
         this.currentPrice = currentPrice;
         this.lot = lot;
@@ -30,10 +60,22 @@ public class AcceptBidListener extends MouseAdapter {
         this.space = SpaceUtils.getSpace();
     }
 
+    /**
+     * Creates a confirmation modal to ensure the user wishes
+     * to accept the latest bid, displaying the value for the
+     * user's convenience. Uses a transaction to ensure that the
+     * bid is accepted, to avoid updating any internal objects
+     * which would leave the application in a bad state. This does
+     * not touch the UI, which is controlled by the registered
+     * RemoteEventListeners.
+     *
+     * @param event             the mouse event
+     */
     @Override
     public void mouseClicked(MouseEvent event){
         JPanel modal = new JPanel();
 
+        // TODO: Switch out currentPrice for lot
         modal.add(new JLabel("Are you sure you want to accept the bid of " + currentPrice.getText() + "?"));
 
         int result = JOptionPane.showConfirmDialog(null, modal,

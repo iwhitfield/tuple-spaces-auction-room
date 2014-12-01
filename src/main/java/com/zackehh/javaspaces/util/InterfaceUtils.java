@@ -141,7 +141,7 @@ public class InterfaceUtils {
             if(i++ > 0) {
                 camelCaseString +=
                         part.substring(0, 1).toUpperCase() +
-                                part.substring(1).toLowerCase();
+                        part.substring(1).toLowerCase();
             } else {
                 camelCaseString += part;
             }

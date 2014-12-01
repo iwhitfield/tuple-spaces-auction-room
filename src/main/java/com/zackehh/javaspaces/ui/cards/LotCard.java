@@ -38,8 +38,6 @@ public class LotCard extends JPanel {
 
         this.lot = lotForCard;
 
-        this.bidTable = new BidTable();
-
         this.space = SpaceUtils.getSpace();
 
         setLayout(new BorderLayout());
@@ -142,6 +140,7 @@ public class LotCard extends JPanel {
 
         add(p);
 
+        bidTable = new BidTable();
         bidTable.setModel(bidHistory, new Vector<String>(){{
             add("Buyer ID");
             add("Bid Amount");

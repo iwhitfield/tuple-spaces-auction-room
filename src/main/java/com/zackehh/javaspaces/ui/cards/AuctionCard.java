@@ -140,7 +140,6 @@ public class AuctionCard extends JPanel {
         add(bidListingPanel, BorderLayout.SOUTH);
 
         try {
-            // add the listener
             space.notify(new IWsLot(), null, new NewLotNotifier().getListener(), Lease.FOREVER, null);
         } catch (Exception e) {
             e.printStackTrace();
