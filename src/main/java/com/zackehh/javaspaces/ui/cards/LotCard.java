@@ -15,6 +15,7 @@ import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -65,6 +66,11 @@ public class LotCard extends JPanel {
     private final JLabel currentPrice;
 
     /**
+     * The label associated with the current price.
+     */
+    private final JLabel currentPriceLabel;
+
+    /**
      * The label allowing the user to place a bid.
      */
     private final JLabel placeBid;
@@ -110,8 +116,6 @@ public class LotCard extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
 
-        currentPrice = new JLabel();
-
         JLabel back = new JLabel("Back");
         back.addMouseListener(new MouseAdapter() {
             @Override
@@ -124,18 +128,21 @@ public class LotCard extends JPanel {
 
         placeBid = new JLabel("Place Bid");
         acceptBid = new JLabel("Accept Latest Bid");
+        currentPrice = new JLabel();
 
-        if(UserUtils.getCurrentUser().matches(lot.getUserId()) && !lot.hasEnded()){
-            acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
-            if(lot.getLatestBid() == null){
-                acceptBid.setVisible(false);
+        if(!lot.hasEnded()) {
+            if (UserUtils.getCurrentUser().matches(lot.getUserId())) {
+                acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
+                if (lot.getLatestBid() == null) {
+                    acceptBid.setVisible(false);
+                }
+                panel.add(acceptBid, BorderLayout.EAST);
+
+                // TODO: Remove item
+            } else {
+                placeBid.addMouseListener(new PlaceBidListener(lot));
+                panel.add(placeBid, BorderLayout.EAST);
             }
-            panel.add(acceptBid, BorderLayout.EAST);
-
-            // TODO: Remove item
-        } else {
-            placeBid.addMouseListener(new PlaceBidListener(lot));
-            panel.add(placeBid, BorderLayout.EAST);
         }
 
         add(panel, BorderLayout.NORTH);
@@ -173,19 +180,16 @@ public class LotCard extends JPanel {
         bidHistory = InterfaceUtils.getVectorBidMatrix(lot);
 
         if(lot.hasEnded()){
-            JLabel currentPriceLabel = new JLabel("Won by " + bidHistory.get(bidHistory.size() - 1).get(0) +
-                    " for " + InterfaceUtils.getDoubleAsCurrency(Double.parseDouble(lot.getCurrentPrice().toString())),
-                    SwingConstants.CENTER);
-            p.add(currentPriceLabel);
+            currentPriceLabel = new JLabel("Won by " + bidHistory.get(0).get(0) + " -", SwingConstants.RIGHT);
+            currentPrice.setText(" Price: " + InterfaceUtils.getDoubleAsCurrency(lot.getCurrentPrice()));
         } else {
-            JLabel currentPriceLabel = new JLabel("Current Price: ", SwingConstants.RIGHT);
-            currentPrice.setText(InterfaceUtils.getDoubleAsCurrency(Double.parseDouble(lot.getCurrentPrice().toString())));
-
-            currentPriceLabel.setLabelFor(currentPrice);
-
-            p.add(currentPriceLabel);
-            p.add(currentPrice);
+            currentPriceLabel = new JLabel("Current Price: ", SwingConstants.RIGHT);
+            currentPrice.setText(InterfaceUtils.getDoubleAsCurrency(lot.getCurrentPrice()));
         }
+
+        currentPriceLabel.setLabelFor(currentPrice);
+        p.add(currentPriceLabel);
+        p.add(currentPrice);
 
         add(p);
 
@@ -268,8 +272,8 @@ public class LotCard extends JPanel {
                 if(latestLot.hasEnded()){
                     acceptBid.setVisible(false);
                     placeBid.setVisible(false);
-                    // TODO: Better handling here
-                    currentPrice.setText("ENDED");
+                    currentPriceLabel.setText("Won by " + bidHistory.get(0).get(0) + " -");
+                    currentPrice.setText(" Price: " + latestLot.getCurrentPrice());
                 }
             } catch (Exception e) {
                 e.printStackTrace();

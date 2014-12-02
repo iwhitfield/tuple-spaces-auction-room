@@ -75,7 +75,6 @@ public class AcceptBidListener extends MouseAdapter {
     public void mouseClicked(MouseEvent event){
         JPanel modal = new JPanel();
 
-        // TODO: Switch out currentPrice for lot
         modal.add(new JLabel("Are you sure you want to accept the bid of " + currentPrice.getText() + "?"));
 
         int result = JOptionPane.showConfirmDialog(null, modal,
