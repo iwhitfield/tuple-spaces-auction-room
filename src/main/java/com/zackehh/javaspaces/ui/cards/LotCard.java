@@ -7,6 +7,7 @@ import com.zackehh.javaspaces.ui.components.tables.BidTable;
 import com.zackehh.javaspaces.ui.listeners.AcceptBidListener;
 import com.zackehh.javaspaces.ui.listeners.GenericNotificationListener;
 import com.zackehh.javaspaces.ui.listeners.PlaceBidListener;
+import com.zackehh.javaspaces.ui.listeners.RemoveLotListener;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
@@ -15,7 +16,6 @@ import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -132,13 +132,13 @@ public class LotCard extends JPanel {
 
         if(!lot.hasEnded()) {
             if (UserUtils.getCurrentUser().matches(lot.getUserId())) {
-                acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
-                if (lot.getLatestBid() == null) {
-                    acceptBid.setVisible(false);
+                if(lot.getLatestBid() == null){
+                    acceptBid.setText("Remove Lot");
+                    acceptBid.addMouseListener(new RemoveLotListener(lot));
+                } else {
+                    acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
                 }
                 panel.add(acceptBid, BorderLayout.EAST);
-
-                // TODO: Remove item
             } else {
                 placeBid.addMouseListener(new PlaceBidListener(lot));
                 panel.add(placeBid, BorderLayout.EAST);
@@ -235,8 +235,9 @@ public class LotCard extends JPanel {
                     add(InterfaceUtils.getDoubleAsCurrency(latestBid.getPrice()));
                 }};
 
-                if(!acceptBid.isVisible() && !latestLot.hasEnded()){
-                    acceptBid.setVisible(true);
+                if(latestLot.getLatestBid() != null){
+                    acceptBid.setText("Accept Latest Bid");
+                    acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
                 }
 
                 bidHistory.add(0, insertion);
@@ -270,10 +271,18 @@ public class LotCard extends JPanel {
                 IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null);
                 final IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
                 if(latestLot.hasEnded()){
+                    Vector<String> winningBid = bidHistory.get(0);
+                    String winningId = winningBid.get(0);
+                    String winningPrice = winningBid.get(2);
+
                     acceptBid.setVisible(false);
                     placeBid.setVisible(false);
-                    currentPriceLabel.setText("Won by " + bidHistory.get(0).get(0) + " -");
-                    currentPrice.setText(" Price: " + latestLot.getCurrentPrice());
+                    currentPriceLabel.setText("Won by " + winningPrice + " -");
+                    currentPrice.setText(" Price: " + winningPrice);
+
+                    if(UserUtils.getCurrentUser().matches(winningId)){
+                        JOptionPane.showMessageDialog(null, "You just won " + latestLot.getItemName() + "!");
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
