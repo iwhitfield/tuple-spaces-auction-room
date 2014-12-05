@@ -2,7 +2,6 @@ package com.zackehh.javaspaces.util;
 
 import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
-import com.zackehh.javaspaces.constants.Constants;
 import net.jini.space.JavaSpace;
 
 import javax.swing.text.JTextComponent;
@@ -70,7 +69,7 @@ public class InterfaceUtils {
         ArrayList<IWsBid> bidHistory = new ArrayList<IWsBid>();
 
         try {
-            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null);
+            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null, false);
             IWsLot refreshedLot = (IWsLot) space.read(lotTemplate, null, Constants.SPACE_TIMEOUT);
 
             String[] bids = refreshedLot.getHistory().split(",");

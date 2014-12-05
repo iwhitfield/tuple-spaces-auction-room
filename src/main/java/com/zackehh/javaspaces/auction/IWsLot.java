@@ -49,6 +49,11 @@ public class IWsLot implements Entry {
     public Boolean ended;
 
     /**
+     * Whether the lot is marked for removal.
+     */
+    public Boolean markedForRemoval;
+
+    /**
      * Default constructor, used to match anything in the space.
      */
     public IWsLot(){ }
@@ -65,7 +70,7 @@ public class IWsLot implements Entry {
      * @param description   a short description of the item
      * @param ended         whether the lot has ended
      */
-    public IWsLot(Integer id, String userId, String history, String name, Double price, String description, Boolean ended){
+    public IWsLot(Integer id, String userId, String history, String name, Double price, String description, Boolean ended, Boolean markedForRemoval){
         this.id = id;
         this.userId = userId;
         this.history = history;
@@ -73,6 +78,7 @@ public class IWsLot implements Entry {
         this.price = price;
         this.description = description;
         this.ended = ended;
+        this.markedForRemoval = markedForRemoval;
     }
 
     /**
@@ -134,6 +140,17 @@ public class IWsLot implements Entry {
      */
     public Boolean hasEnded(){
         return ended;
+    }
+
+    /**
+     * Getter to determine whether the lot is
+     * marked for removal or not. Used to ensure
+     * removed items are synced across clients.
+     *
+     * @return true         if marked for removal
+     */
+    public Boolean isMarkedForRemoval(){
+        return markedForRemoval;
     }
 
     /**

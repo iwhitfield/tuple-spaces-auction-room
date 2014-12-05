@@ -1,7 +1,7 @@
 package com.zackehh.javaspaces.ui.listeners;
 
 import com.zackehh.javaspaces.auction.IWsLot;
-import com.zackehh.javaspaces.constants.Constants;
+import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import net.jini.core.lease.Lease;
 import net.jini.core.transaction.Transaction;
@@ -86,12 +86,12 @@ public class AcceptBidListener extends MouseAdapter {
                 Transaction.Created trc = TransactionFactory.create(manager, 3000);
                 transaction = trc.transaction;
 
-                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null);
+                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, false);
                 IWsLot updatedLot = (IWsLot) space.take(template, transaction, Constants.SPACE_TIMEOUT);
 
                 updatedLot.ended = true;
 
-                space.write(updatedLot, transaction, Lease.FOREVER);
+                space.write(updatedLot, transaction, Constants.LOT_LEASE_TIMEOUT);
 
                 transaction.commit();
 

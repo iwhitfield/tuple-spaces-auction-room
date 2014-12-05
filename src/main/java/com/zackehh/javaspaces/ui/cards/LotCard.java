@@ -2,8 +2,8 @@ package com.zackehh.javaspaces.ui.cards;
 
 import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
-import com.zackehh.javaspaces.constants.Constants;
-import com.zackehh.javaspaces.ui.components.tables.BidTable;
+import com.zackehh.javaspaces.util.Constants;
+import com.zackehh.javaspaces.ui.components.BaseTable;
 import com.zackehh.javaspaces.ui.listeners.AcceptBidListener;
 import com.zackehh.javaspaces.ui.listeners.GenericNotificationListener;
 import com.zackehh.javaspaces.ui.listeners.PlaceBidListener;
@@ -39,7 +39,7 @@ public class LotCard extends JPanel {
      * The table of bids which will hold the the bid
      * history of the current lot.
      */
-    private final BidTable bidTable;
+    private final BaseTable bidTable;
 
     /**
      * The lot that this card is associated with. This
@@ -76,6 +76,11 @@ public class LotCard extends JPanel {
     private final JLabel placeBid;
 
     /**
+     * The main cards parent.
+     */
+    private final JPanel cards;
+
+    /**
      * Initializes a new card based on the given lot, which
      * allows the user to place a bid on an item and allows
      * the seller to accept a bid or remove a lot from the
@@ -88,6 +93,8 @@ public class LotCard extends JPanel {
      */
     public LotCard(final JPanel cards, IWsLot lotForCard) {
         super();
+
+        this.cards = cards;
 
         this.lot = lotForCard;
 
@@ -103,7 +110,7 @@ public class LotCard extends JPanel {
 
             // generate the templates
             IWsBid bidTemplate = new IWsBid(null, null, lot.getId(), null, null);
-            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null);
+            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null, null);
 
             // add the listener
             space.notify(bidTemplate, null, bidListener.getListener(), Lease.FOREVER, null);
@@ -193,8 +200,7 @@ public class LotCard extends JPanel {
 
         add(p);
 
-        bidTable = new BidTable();
-        bidTable.setModel(bidHistory, new Vector<String>(){{
+        bidTable = new BaseTable(bidHistory, new Vector<String>(){{
             add("Buyer ID");
             add("Bid Amount");
         }});
@@ -224,7 +230,7 @@ public class LotCard extends JPanel {
         @Override
         public void notify(RemoteEvent ev) {
             try {
-                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null);
+                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, null);
                 final IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
 
                 IWsBid bidTemplate = new IWsBid(latestLot.getLatestBid(), null, null, null, null);
@@ -261,16 +267,18 @@ public class LotCard extends JPanel {
         /**
          * Fetches the latest version of the lot from the space
          * when notified and ensures that the auction has not
-         * been closed by the seller.
+         * been closed by the seller. This will also ensure that
+         * if a lot has been removed, it is reflected as such to
+         * the user.
          *
          * @param ev        the remote event
          */
         @Override
         public void notify(RemoteEvent ev) {
             try {
-                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null);
+                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, null);
                 final IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
-                if(latestLot.hasEnded()){
+                if(latestLot != null && latestLot.hasEnded()){
                     Vector<String> winningBid = bidHistory.get(0);
                     String winningId = winningBid.get(0);
                     String winningPrice = winningBid.get(2);
@@ -283,6 +291,11 @@ public class LotCard extends JPanel {
                     if(UserUtils.getCurrentUser().matches(winningId)){
                         JOptionPane.showMessageDialog(null, "You just won " + latestLot.getItemName() + "!");
                     }
+                    return;
+                }
+                if(latestLot == null || latestLot.isMarkedForRemoval()){
+                    JOptionPane.showMessageDialog(null, "This lot has been removed!");
+                    cards.remove(LotCard.this);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

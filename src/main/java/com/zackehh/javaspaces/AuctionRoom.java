@@ -1,9 +1,10 @@
 package com.zackehh.javaspaces;
 
+import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
 import com.zackehh.javaspaces.ui.cards.AuctionCard;
-import com.zackehh.javaspaces.constants.Constants;
+import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.lease.Lease;
@@ -97,25 +98,11 @@ public class AuctionRoom extends JFrame {
         setResizable(false);
         setVisible(true);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                DefaultTableModel model = auctionCard.getTableModel();
-                IWsLot latestLot = null;
-                do {
-                    try {
-                        IWsLot template = new IWsLot(lots.size() + 1, null, null, null, null, null, null);
-                        latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
-                        if (latestLot != null) {
-                            lots.add(latestLot);
-                            model.addRow(latestLot.asObjectArray());
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } while(latestLot != null);
-            }
-        }).start();
+        InitialLoadingRunnable initialLoadingRunnable = new InitialLoadingRunnable();
+        RemovalPollingRunnable removalPollingRunnable = new RemovalPollingRunnable();
+
+        new Thread(initialLoadingRunnable).start();
+        new Thread(removalPollingRunnable).start();
     }
 
     /**
@@ -142,5 +129,83 @@ public class AuctionRoom extends JFrame {
         cards.add(auctionCard, Constants.AUCTION_CARD);
 
         cp.add(cards);
+    }
+
+    /**
+     * Initial loader for the AuctionRoom. Loads a list of unfinished
+     * and current Lots. This is to ensure that new users cannot access
+     * lots that may have already been scheduled to be removed from the
+     * space.
+     */
+    private class InitialLoadingRunnable implements Runnable {
+
+        /**
+         * Reads all items that are available in the space and lists
+         * them in the table. Also stores inside the main list class.
+         * Does not include ended or lots marked for removal, to avoid
+         * potential race conditions with lots being removed as a user
+         * tries to view them.
+         */
+        @Override
+        public void run() {
+            DefaultTableModel model = auctionCard.getTableModel();
+            try {
+                IWsSecretary secretary = (IWsSecretary) space.read(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
+                int i = 0;
+                while(i <= secretary.getLotNumber()) {
+                    IWsLot template = new IWsLot(i++ + 1, null, null, null, null, null, false, false);
+                    if(space.readIfExists(template, null, 1000) != null) {
+                        IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+                        if (latestLot != null) {
+                            lots.add(latestLot);
+                            model.addRow(latestLot.asObjectArray());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Simple polling to continually cleanup removed lots,
+     * to ensure that users cannot accidentally gain access
+     * to a null object.
+     */
+    private class RemovalPollingRunnable implements Runnable {
+
+        /**
+         * Polls the space every X seconds to check for any
+         * lots which are marked for removal. The thread will
+         * then take any matching lots to cleanup after ended
+         * auctions. Also accounts for any left over bids
+         * associated with ended lots.
+         */
+        @Override
+        public void run() {
+            while(true){
+                try {
+                    IWsLot template = new IWsLot(){{
+                        markedForRemoval = true;
+                    }};
+                    IWsLot removedLot = (IWsLot) space.take(template, null, Constants.SPACE_TIMEOUT);
+                    if(removedLot != null){
+                        Object o;
+                        IWsBid bidTemplate = new IWsBid(null, null, removedLot.getId(), null, null);
+                        do {
+                            o = space.take(bidTemplate, null, Constants.SPACE_TIMEOUT);
+                        } while(o != null);
+                    }
+                } catch(Exception e){
+                    // don't care, in honesty
+                }
+                try {
+                    Thread.sleep(Constants.POLL_TIMEOUT);
+                } catch(Exception e) {
+                    // should never fail
+                }
+            }
+        }
     }
 }

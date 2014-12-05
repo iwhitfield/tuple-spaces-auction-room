@@ -3,7 +3,7 @@ package com.zackehh.javaspaces.ui.listeners;
 import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
-import com.zackehh.javaspaces.constants.Constants;
+import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.util.SpaceUtils;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.lease.Lease;
@@ -88,7 +88,7 @@ public class PlaceBidListener extends MouseAdapter {
                     transaction = trc.transaction;
 
                     IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), transaction, Constants.SPACE_TIMEOUT);
-                    IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null);
+                    IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, false);
 
                     // dispose of the previous lot item
                     IWsLot updatedLot = (IWsLot) space.take(template, transaction, Constants.SPACE_TIMEOUT);
@@ -100,8 +100,8 @@ public class PlaceBidListener extends MouseAdapter {
 
                     final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, !privateCheckBox.isSelected());
 
-                    space.write(updatedLot, transaction, Lease.FOREVER);
-                    space.write(newBid, transaction, Lease.FOREVER);
+                    space.write(updatedLot, transaction, Constants.LOT_LEASE_TIMEOUT);
+                    space.write(newBid, transaction, Constants.BID_LEASE_TIMEOUT);
                     space.write(secretary, transaction, Lease.FOREVER);
 
                     transaction.commit();

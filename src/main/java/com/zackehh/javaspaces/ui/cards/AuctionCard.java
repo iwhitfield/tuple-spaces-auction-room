@@ -1,10 +1,11 @@
 package com.zackehh.javaspaces.ui.cards;
 
+import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
-import com.zackehh.javaspaces.constants.Constants;
+import com.zackehh.javaspaces.util.Constants;
 import com.zackehh.javaspaces.ui.components.JResultText;
-import com.zackehh.javaspaces.ui.components.tables.LotTable;
+import com.zackehh.javaspaces.ui.components.BaseTable;
 import com.zackehh.javaspaces.ui.listeners.GenericNotificationListener;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import com.zackehh.javaspaces.util.SpaceUtils;
@@ -21,6 +22,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
 /**
@@ -51,7 +54,7 @@ public class AuctionCard extends JPanel {
     /**
      * The table to keep track of any new lots entered.
      */
-    private final LotTable lotTable;
+    private final BaseTable lotTable;
 
     /**
      * Initialize a new AuctionCard with a list of initial lots
@@ -101,9 +104,23 @@ public class AuctionCard extends JPanel {
         JTextArea itemListOut = new JTextArea(30, 30);
         itemListOut.setEditable(false);
 
-        lotTable = new LotTable(lots, cards);
-        lotTable.setModel(new String[0][5], new String[] {
+        lotTable = new BaseTable(new String[0][5], new String[] {
                 "Lot ID", "Item Name", "Seller ID", "Current Price", "Status"
+        });
+
+        lotTable.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent event) {
+                int row = lotTable.rowAtPoint(event.getPoint());
+                if (event.getClickCount() == 2) {
+                    if(lots.get(row).hasEnded()){
+                        JOptionPane.showMessageDialog(null, "This item has already ended!");
+                        return;
+                    }
+                    cards.add(new LotCard(cards, lots.get(row)), Constants.BID_CARD);
+                    CardLayout cl = (CardLayout) cards.getLayout();
+                    cl.show(cards, Constants.BID_CARD);
+                }
+            }
         });
 
         // Add the table to a scrolling pane
@@ -142,9 +159,9 @@ public class AuctionCard extends JPanel {
                     IWsSecretary secretary = (IWsSecretary) space.take(new IWsSecretary(), transaction, Constants.SPACE_TIMEOUT);
 
                     final int lotNumber = secretary.addNewLot();
-                    IWsLot newLot = new IWsLot(lotNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription, false);
+                    IWsLot newLot = new IWsLot(lotNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription, false, false);
 
-                    space.write(newLot, transaction, Lease.FOREVER);
+                    space.write(newLot, transaction, Constants.LOT_LEASE_TIMEOUT);
                     space.write(secretary, transaction, Lease.FOREVER);
 
                     transaction.commit();
@@ -169,7 +186,14 @@ public class AuctionCard extends JPanel {
         add(bidListingPanel, BorderLayout.SOUTH);
 
         try {
-            space.notify(new IWsLot(), null, new NewLotNotifier().getListener(), Lease.FOREVER, null);
+            IWsLot newLotTemplate = new IWsLot();
+            IWsLot removeLotTemplate = new IWsLot();
+
+            newLotTemplate.markedForRemoval = false;
+            removeLotTemplate.markedForRemoval = true;
+
+            space.notify(newLotTemplate, null, new NewLotNotifier().getListener(), Lease.FOREVER, null);
+            space.notify(removeLotTemplate, null, new RemoveLotFromAuctionNotifier().getListener(), Lease.FOREVER, null);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -208,14 +232,25 @@ public class AuctionCard extends JPanel {
 
             try {
                 IWsSecretary secretary = (IWsSecretary) space.read(new IWsSecretary(), null, Constants.SPACE_TIMEOUT);
-                IWsLot template = new IWsLot(secretary.getLotNumber(), null, null, null, null, null, null);
+                IWsLot template = new IWsLot(secretary.getLotNumber(), null, null, null, null, null, null, null);
                 IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
 
                 Object[] insertion = latestLot.asObjectArray();
+                int currentIndex = latestLot.getId() - 1;
 
                 if(latestLot.hasEnded()){
-                    lots.set(latestLot.getId() - 1, latestLot);
-                    model.setValueAt(insertion[4], latestLot.getId() - 1, 4);
+                    lots.set(currentIndex, latestLot);
+                    model.setValueAt(insertion[4], currentIndex, 4);
+                    if(UserUtils.getCurrentUser().matches(latestLot.getUserId())){
+                        JOptionPane.showMessageDialog(null, "You just won " + latestLot.getItemName() + "!");
+                    }
+                    return;
+                }
+
+                if(latestLot.isMarkedForRemoval()){
+                    lots.remove(currentIndex);
+                    model.removeRow(currentIndex);
+                    space.take(template, null, Constants.SPACE_TIMEOUT);
                     return;
                 }
 
@@ -223,8 +258,53 @@ public class AuctionCard extends JPanel {
                     lots.add(latestLot);
                     model.addRow(insertion);
                 } else {
-                    lots.set(latestLot.getId() - 1, latestLot);
-                    model.setValueAt(insertion[3], latestLot.getId() - 1, 3);
+                    lots.set(currentIndex, latestLot);
+                    model.setValueAt(insertion[3], currentIndex, 3);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    /**
+     * Controller for Lot removal, which allows the system to flag a lot as
+     * "markedForRemoval"; this will remove the Lot and all associated bids
+     * (although the Lot *should* never have any associated bids). This will
+     * ensure that all connected clients are updated with the removed lot,
+     * without just removing the lot from the initial client.
+     */
+    private class RemoveLotFromAuctionNotifier extends GenericNotificationListener {
+
+        /**
+         * Custom notify implementation which will fetch the current lot from
+         * the space, and remove the lot from the current table and lot list.
+         * It will then remove any associated bids before removing the lot from
+         * the space entirely. However, this should never occur because you can
+         * only remove a lot when no bids have been placed on the item.
+         *
+         * @param ev        the remote event
+         */
+        @Override
+        public void notify(RemoteEvent ev) {
+            DefaultTableModel model = getTableModel();
+
+            try {
+                IWsLot template = new IWsLot(null, null, null, null, null, null, null, true);
+                IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+
+                int currentIndex = -1;
+                for(int i = 0; i < lots.size(); i++){
+                    if(lots.get(i).getId().intValue() == latestLot.getId().intValue()){
+                        currentIndex = i;
+                        break;
+                    }
+                }
+
+                if(currentIndex > -1){
+                    lots.remove(currentIndex);
+                    model.removeRow(currentIndex);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
