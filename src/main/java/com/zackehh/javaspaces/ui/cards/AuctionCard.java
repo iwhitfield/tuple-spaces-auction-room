@@ -1,6 +1,5 @@
 package com.zackehh.javaspaces.ui.cards;
 
-import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
 import com.zackehh.javaspaces.auction.IWsSecretary;
 import com.zackehh.javaspaces.util.Constants;
@@ -83,8 +82,6 @@ public class AuctionCard extends JPanel {
         final JTextField itemDescriptionIn = new JTextField("", 1);
         final JLabel startingPriceLabel = new JLabel("Starting Price: ");
         final JTextField startingPriceIn = new JTextField("", 6);
-        final JLabel expirationLengthLabel = new JLabel("Auction Length (s): ");
-        final JTextField expirationLengthIn = new JTextField("");
         final JLabel resultTextLabel = new JLabel("Result: ");
         final JResultText resultTextOut = new JResultText();
 
@@ -94,8 +91,6 @@ public class AuctionCard extends JPanel {
         fieldInputPanel.add(itemDescriptionIn);
         fieldInputPanel.add(startingPriceLabel);
         fieldInputPanel.add(startingPriceIn);
-//        fieldInputPanel.add(expirationLengthLabel);
-//        fieldInputPanel.add(expirationLengthIn);
         fieldInputPanel.add(resultTextLabel);
         fieldInputPanel.add(resultTextOut);
 
@@ -166,6 +161,9 @@ public class AuctionCard extends JPanel {
 
                     transaction.commit();
 
+                    itemNameIn.setText("");
+                    itemDescriptionIn.setText("");
+                    startingPriceIn.setText("");
                     resultTextOut.setText("Added Lot #" + lotNumber + "!");
                 } catch(Exception e) {
                     System.err.println("Error when adding lot to the space: " + e);
