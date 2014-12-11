@@ -138,7 +138,7 @@ public class LotCard extends JPanel {
         currentPrice = new JLabel();
 
         if(!lot.hasEnded()) {
-            if (UserUtils.getCurrentUser().matches(lot.getUserId())) {
+            if (UserUtils.getCurrentUser().getId().matches(lot.getUser().getId())) {
                 if(lot.getLatestBid() == null){
                     acceptBid.setText("Remove Lot");
                     acceptBid.addMouseListener(new RemoveLotListener(lot));
@@ -237,7 +237,7 @@ public class LotCard extends JPanel {
                 final IWsBid latestBid = (IWsBid) space.read(bidTemplate, null, Constants.SPACE_TIMEOUT);
 
                 Vector<String> insertion = new Vector<String>(){{
-                    add(latestBid.isAnonymous(latestLot) ? "Anonymous User" : latestBid.getUserId());
+                    add(latestBid.isAnonymous(latestLot) ? "Anonymous User" : latestBid.getUser().getId());
                     add(InterfaceUtils.getDoubleAsCurrency(latestBid.getPrice()));
                 }};
 
@@ -288,7 +288,7 @@ public class LotCard extends JPanel {
                     currentPriceLabel.setText("Won by " + winningPrice + " -");
                     currentPrice.setText(" Price: " + winningPrice);
 
-                    if(UserUtils.getCurrentUser().matches(winningId)){
+                    if(UserUtils.getCurrentUser().getId().matches(winningId)){
                         JOptionPane.showMessageDialog(null, "You just won " + latestLot.getItemName() + "!");
                     }
                     return;

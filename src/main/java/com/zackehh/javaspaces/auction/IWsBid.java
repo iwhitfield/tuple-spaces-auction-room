@@ -35,7 +35,7 @@ public class IWsBid implements Entry {
     /**
      * The user who bid on the item.
      */
-    public String userId;
+    public IWsUser user;
 
     /**
      * Default constructor, used to match anything in the space.
@@ -47,14 +47,14 @@ public class IWsBid implements Entry {
      * for use when matching specific fields across the space.
      *
      * @param id            the id of this bid
-     * @param userId        the user id associated with this bid
+     * @param user          the user associated with this bid
      * @param itemId        the item id this bid is associated with
      * @param price         the price the user has bid on the item
      * @param visible       whether this bid is anonymous or not
      */
-    public IWsBid(Integer id, String userId, Integer itemId, Double price, Boolean visible){
+    public IWsBid(Integer id, IWsUser user, Integer itemId, Double price, Boolean visible){
         this.id = id;
-        this.userId = userId;
+        this.user = user;
         this.itemId = itemId;
         this.price = price;
         this.visible = visible;
@@ -74,8 +74,8 @@ public class IWsBid implements Entry {
      *
      * @return String       the user id
      */
-    public String getUserId() {
-        return userId;
+    public IWsUser getUser() {
+        return user;
     }
 
     /**
@@ -113,8 +113,8 @@ public class IWsBid implements Entry {
      */
     public Boolean isAnonymous(IWsLot lot){
         return  !isPublic() &&
-                !UserUtils.getCurrentUser().matches(getUserId()) &&
-                !UserUtils.getCurrentUser().matches(lot.getUserId());
+                !UserUtils.getCurrentUser().getId().matches(getUser().getId()) &&
+                !UserUtils.getCurrentUser().getId().matches(lot.getUser().getId());
     }
 
     /**
@@ -122,10 +122,10 @@ public class IWsBid implements Entry {
      * to allow overriding the field in the case
      * of an anonymous bid.
      *
-     * @param userId        the id to set to
+     * @param user        the id to set to
      */
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setUserId(IWsUser user) {
+        this.user = user;
     }
 
 }

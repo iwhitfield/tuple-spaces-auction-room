@@ -1,6 +1,5 @@
 package com.zackehh.javaspaces.util;
 
-import net.jini.lease.LeaseRenewalManager;
 import net.jini.space.JavaSpace;
 import net.jini.core.transaction.server.TransactionManager;
 import java.rmi.RMISecurityManager;

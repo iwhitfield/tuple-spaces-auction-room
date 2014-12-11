@@ -39,9 +39,9 @@ public class IWsLot implements Entry {
     public String description;
 
     /**
-     * The user id of the seller of this item.
+     * The seller of this item.
      */
-    public String userId;
+    public IWsUser user;
 
     /**
      * Whether the auction for this lot has finished.
@@ -63,16 +63,16 @@ public class IWsLot implements Entry {
      * for use when matching specific fields across the space.
      *
      * @param id            the id of this item
-     * @param userId        the user id who created this item
+     * @param user          the user who created this item
      * @param history       a list of historical bids
      * @param name          the name of the item
      * @param price         the current price of the item
      * @param description   a short description of the item
      * @param ended         whether the lot has ended
      */
-    public IWsLot(Integer id, String userId, String history, String name, Double price, String description, Boolean ended, Boolean markedForRemoval){
+    public IWsLot(Integer id, IWsUser user, String history, String name, Double price, String description, Boolean ended, Boolean markedForRemoval){
         this.id = id;
-        this.userId = userId;
+        this.user = user;
         this.history = history;
         this.name = name;
         this.price = price;
@@ -95,8 +95,8 @@ public class IWsLot implements Entry {
      *
      * @return String       the user id
      */
-    public String getUserId(){
-        return userId;
+    public IWsUser getUser(){
+        return user;
     }
 
     /**
@@ -179,7 +179,7 @@ public class IWsLot implements Entry {
         return new Object[]{
             id,
             name,
-            userId,
+            user.getId(),
             InterfaceUtils.getDoubleAsCurrency(price),
             hasEnded() ? "Ended" : "Running"
         };

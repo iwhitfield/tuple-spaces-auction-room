@@ -1,5 +1,7 @@
 package com.zackehh.javaspaces.util;
 
+import com.zackehh.javaspaces.auction.IWsUser;
+
 /**
  * An extremely simple class to store and keep track of the
  * username of the current user. This class will only contain
@@ -13,7 +15,7 @@ public final class UserUtils {
      * not change throughout the lifecycle of the application,
      * however this is provided so we have the potential to.
      */
-    private static String username;
+    private static IWsUser user;
 
     /**
      * Default constructor which should not be called. All variables
@@ -29,19 +31,19 @@ public final class UserUtils {
      *
      * @return String       the current username
      */
-    public static String getCurrentUser(){
-        return username;
+    public static IWsUser getCurrentUser(){
+        return user;
     }
 
     /**
      * Sets the current username associated with the application. This
      * is called only after the initialization in IWsAuctionRoom#main.
      *
-     * @param user        the username to set
+     * @param username      the username to set
      */
-    public static void setCurrentUser(String user){
-        username = user;
-        System.out.println("Registered client for user: " + user);
+    public static void setCurrentUser(String username){
+        user = new IWsUser(username);
+        System.out.println("Registered client for user: " + username);
     }
 
 }

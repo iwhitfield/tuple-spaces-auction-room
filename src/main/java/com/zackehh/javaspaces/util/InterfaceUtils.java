@@ -2,6 +2,7 @@ package com.zackehh.javaspaces.util;
 
 import com.zackehh.javaspaces.auction.IWsBid;
 import com.zackehh.javaspaces.auction.IWsLot;
+import com.zackehh.javaspaces.auction.IWsUser;
 import net.jini.space.JavaSpace;
 
 import javax.swing.text.JTextComponent;
@@ -32,7 +33,8 @@ public class InterfaceUtils {
      */
     public static Number getTextAsNumber(JTextComponent component){
         try {
-            return NumberFormat.getInstance().parse(component.getText());
+            String input = component.getText().replaceAll("^[^0-9|\\.]", "");
+            return NumberFormat.getInstance().parse(input);
         } catch(ParseException e){
             return null;
         }
@@ -83,7 +85,7 @@ public class InterfaceUtils {
                 IWsBid bidItem = ((IWsBid) space.read(template, null, Constants.SPACE_TIMEOUT));
 
                 if(bidItem.isAnonymous(refreshedLot)) {
-                    bidItem.setUserId("Anonymous Buyer");
+                    bidItem.setUserId(new IWsUser("Anonymous Buyer"));
                 }
 
                 bidHistory.add(bidItem);
@@ -116,7 +118,7 @@ public class InterfaceUtils {
         for(int iY = 0; iY < bids.size(); iY++){
             final IWsBid bid = bids.get(iY);
             values.add(iY, new Vector<String>(){{
-                add(bid.getUserId());
+                add(bid.getUser().getId());
                 add(InterfaceUtils.getDoubleAsCurrency(bid.getPrice()));
             }});
         }

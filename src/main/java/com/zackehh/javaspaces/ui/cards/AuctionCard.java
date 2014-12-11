@@ -141,6 +141,11 @@ public class AuctionCard extends JPanel {
                 Number startingPrice = InterfaceUtils.getTextAsNumber(startingPriceIn);
                 Double potentialDouble = startingPrice == null ? 0 : startingPrice.doubleValue();
 
+                if(itemName.length() == 0 || itemDescription.length() == 0){
+                    resultTextOut.setText("Invalid item details!");
+                    return;
+                }
+
                 if(startingPrice == null || potentialDouble == 0){
                     resultTextOut.setText("Invalid price!");
                     return;
@@ -239,7 +244,7 @@ public class AuctionCard extends JPanel {
                 if(latestLot.hasEnded()){
                     lots.set(currentIndex, latestLot);
                     model.setValueAt(insertion[4], currentIndex, 4);
-                    if(UserUtils.getCurrentUser().matches(latestLot.getUserId())){
+                    if(UserUtils.getCurrentUser().getId().matches(latestLot.getUser().getId())){
                         JOptionPane.showMessageDialog(null, "You just won " + latestLot.getItemName() + "!");
                     }
                     return;

@@ -31,8 +31,6 @@ public class GenericNotificationListener implements RemoteEventListener {
      * Does nothing except instantiate the Exporter. This ensures
      * that any classes inheriting from GenericNotificationListener
      * do not have to explicitly create their own Exporter.
-     *
-     * @throws RemoteException
      */
     public GenericNotificationListener() {
         try{
