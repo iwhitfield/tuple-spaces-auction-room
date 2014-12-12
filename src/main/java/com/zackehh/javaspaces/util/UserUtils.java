@@ -41,9 +41,10 @@ public final class UserUtils {
      *
      * @param username      the username to set
      */
-    public static void setCurrentUser(String username){
+    public static IWsUser setCurrentUser(String username){
         user = new IWsUser(username);
         System.out.println("Registered client for user: " + username);
+        return user;
     }
 
 }

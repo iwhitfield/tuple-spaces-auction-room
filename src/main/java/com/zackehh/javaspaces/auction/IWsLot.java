@@ -3,6 +3,8 @@ package com.zackehh.javaspaces.auction;
 import com.zackehh.javaspaces.util.InterfaceUtils;
 import net.jini.core.entry.*;
 
+import java.util.Objects;
+
 /**
  * The main Lot object to be dealt with when listing the items
  * available in the auction. This object implements Entry to allow
@@ -183,5 +185,28 @@ public class IWsLot implements Entry {
             InterfaceUtils.getDoubleAsCurrency(price),
             hasEnded() ? "Ended" : "Running"
         };
+    }
+
+    /**
+     * Override Object.equals for use in testing.
+     *
+     * @param o             the comparison object
+     * @return true         if the objects are equal
+     */
+    @Override
+    public boolean equals(Object o){
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IWsLot that = (IWsLot) o;
+
+        return  Objects.equals(this.id, that.id) &&
+                Objects.equals(this.user, that.user) &&
+                Objects.equals(this.history, that.history) &&
+                Objects.equals(this.name, that.name) &&
+                Objects.equals(this.price, that.price) &&
+                Objects.equals(this.description, that.description) &&
+                Objects.equals(this.ended, that.ended) &&
+                Objects.equals(this.markedForRemoval, that.markedForRemoval);
     }
 }

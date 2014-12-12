@@ -33,7 +33,7 @@ public class InterfaceUtils {
      */
     public static Number getTextAsNumber(JTextComponent component){
         try {
-            String input = component.getText().replaceAll("^[^0-9|\\.]", "");
+            String input = component.getText().replaceAll("^[^0-9|\\.|-]", "");
             return NumberFormat.getInstance().parse(input);
         } catch(ParseException e){
             return null;
@@ -51,7 +51,13 @@ public class InterfaceUtils {
         if(value == null){
             return null;
         }
-        return "£" + currencyEnforcer.format(value);
+        String currency = currencyEnforcer.format(value);
+        if(currency.charAt(0) == '-'){
+            return "-£" + currency.substring(1);
+        } else {
+            return "£" + currency;
+        }
+
     }
 
     /**
@@ -65,7 +71,7 @@ public class InterfaceUtils {
      * @param  lot          the IWsLot to gather history for
      * @return ArrayList    the list of bids associated
      */
-    public static ArrayList<IWsBid> getBidHistory(IWsLot lot){
+    public static ArrayList<IWsBid> getBidHistory(IWsLot lot) {
         JavaSpace space = SpaceUtils.getSpace();
 
         ArrayList<IWsBid> bidHistory = new ArrayList<IWsBid>();
@@ -93,12 +99,14 @@ public class InterfaceUtils {
         } catch(Exception e){
             e.printStackTrace();
         }
+
         Collections.sort(bidHistory, new Comparator<IWsBid>() {
             @Override
             public int compare(IWsBid bid1, IWsBid bid2) {
                 return bid2.getPrice().compareTo(bid1.getPrice());
             }
         });
+
         return bidHistory;
     }
 
@@ -147,7 +155,7 @@ public class InterfaceUtils {
                 camelCaseString += part;
             }
         }
-        return camelCaseString;
+        return camelCaseString.length() == 0 || parts.length == 1 ? str : camelCaseString;
     }
 
 }

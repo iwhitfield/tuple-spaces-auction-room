@@ -1,6 +1,7 @@
 package com.zackehh.javaspaces.auction;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A basic user class to contain the id of the user passed into
@@ -33,4 +34,19 @@ public class IWsUser implements Serializable {
         return id;
     }
 
+    /**
+     * Override Object.equals for use in testing.
+     *
+     * @param o             the comparison object
+     * @return true         if the objects are equal
+     */
+    @Override
+    public boolean equals(Object o){
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IWsUser that = (IWsUser) o;
+
+        return Objects.equals(this.id, that.id);
+    }
 }

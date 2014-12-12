@@ -3,6 +3,8 @@ package com.zackehh.javaspaces.auction;
 import com.zackehh.javaspaces.util.UserUtils;
 import net.jini.core.entry.*;
 
+import java.util.Objects;
+
 /**
  * The main Bid object to be dealt with when bidding on lots.
  * This object implements Entry to allow storage in a given JavaSpace
@@ -122,10 +124,30 @@ public class IWsBid implements Entry {
      * to allow overriding the field in the case
      * of an anonymous bid.
      *
-     * @param user        the id to set to
+     * @param user          the id to set to
      */
     public void setUserId(IWsUser user) {
         this.user = user;
+    }
+
+    /**
+     * Override Object.equals for use in testing.
+     *
+     * @param o             the comparison object
+     * @return true         if the objects are equal
+     */
+    @Override
+    public boolean equals(Object o){
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IWsBid that = (IWsBid) o;
+
+        return  Objects.equals(this.visible, that.visible) &&
+                Objects.equals(this.id, that.id) &&
+                Objects.equals(this.price, that.price) &&
+                Objects.equals(this.itemId, that.itemId) &&
+                Objects.equals(this.user, that.user);
     }
 
 }
