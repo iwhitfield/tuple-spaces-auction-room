@@ -1,6 +1,5 @@
 package com.zackehh.javaspaces.util;
 
-import com.sun.tools.internal.xjc.reader.xmlschema.bindinfo.BIConversion;
 import com.zackehh.javaspaces.auction.IWsUser;
 import org.testng.annotations.Test;
 
