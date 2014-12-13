@@ -97,7 +97,6 @@ public class AcceptBidListener extends MouseAdapter {
 
                 lot = updatedLot;
             } catch(Exception e) {
-                System.err.println("Error when accepting bid: " + e);
                 e.printStackTrace();
                 try {
                     if(transaction != null){
