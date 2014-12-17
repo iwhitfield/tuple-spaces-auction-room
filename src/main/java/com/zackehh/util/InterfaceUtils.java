@@ -80,14 +80,14 @@ public class InterfaceUtils {
             IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null, false);
             IWsLot refreshedLot = (IWsLot) space.read(lotTemplate, null, Constants.SPACE_TIMEOUT);
 
-            String[] bids = refreshedLot.getHistory().split(",");
+            ArrayList<Integer> bids = refreshedLot.getHistory();
 
-            if(bids.length <= 1){
+            if(bids.size() == 0){
                 return bidHistory;
             }
 
-            for(int i = 1; i < bids.length; i++){
-                IWsBid template = new IWsBid(Integer.parseInt(bids[i]), null, lot.getId(), null, null);
+            for(Integer bidId : bids){
+                IWsBid template = new IWsBid(bidId, null, lot.getId(), null, null);
                 IWsBid bidItem = ((IWsBid) space.read(template, null, Constants.SPACE_TIMEOUT));
 
                 if(bidItem.isAnonymous(refreshedLot)) {

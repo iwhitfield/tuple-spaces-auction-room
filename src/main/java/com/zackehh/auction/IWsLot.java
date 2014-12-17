@@ -3,6 +3,7 @@ package com.zackehh.auction;
 import com.zackehh.util.InterfaceUtils;
 import net.jini.core.entry.Entry;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 /**
@@ -28,7 +29,7 @@ public class IWsLot implements Entry {
      * The list of bid ids (in order) which have been
      * associated with this item.
      */
-    public String history;
+    public ArrayList<Integer> history;
 
     /**
      * The name of this item.
@@ -79,7 +80,7 @@ public class IWsLot implements Entry {
      * @param description   a short description of the item
      * @param ended         whether the lot has ended
      */
-    public IWsLot(Integer id, IWsUser user, String history, String name, Double price, String description, Boolean ended, Boolean markedForRemoval){
+    public IWsLot(Integer id, IWsUser user, ArrayList<Integer> history, String name, Double price, String description, Boolean ended, Boolean markedForRemoval){
         this.id = id;
         this.user = user;
         this.history = history;
@@ -118,7 +119,12 @@ public class IWsLot implements Entry {
      *
      * @return String       the history of bids
      */
-    public String getHistory() { return history == null ? "," : history; }
+    public ArrayList<Integer> getHistory() {
+        if(history == null){
+            history = new ArrayList<Integer>();
+        }
+        return history;
+    }
 
     /**
      * Getter for the name of the item in the lot.
@@ -174,11 +180,10 @@ public class IWsLot implements Entry {
      * @return Integer      the latest bid id
      */
     public Integer getLatestBid() {
-        String[] ids = getHistory().split(",");
-        if(ids.length < 1){
+        if(getHistory().size() < 1){
             return null;
         }
-        return Integer.parseInt(ids[ids.length - 1]);
+        return getHistory().get(getHistory().size() - 1);
     }
 
     /**

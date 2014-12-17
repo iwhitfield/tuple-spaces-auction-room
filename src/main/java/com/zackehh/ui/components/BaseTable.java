@@ -51,6 +51,11 @@ public class BaseTable extends JTable {
 
         tableHeader.setReorderingAllowed(false);
         tableHeader.setResizingAllowed(false);
+
+        DefaultTableCellRenderer renderer =
+                (DefaultTableCellRenderer) tableHeader.getDefaultRenderer();
+
+        renderer.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
     /**

@@ -17,6 +17,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 /**
  * Listener for the LotCard views which allow a buyer to
@@ -96,7 +97,7 @@ public class PlaceBidListener extends MouseAdapter {
 
                     int bidNumber = secretary.addNewItem();
 
-                    updatedLot.history += "," + bidNumber;
+                    updatedLot.getHistory().add(bidNumber);
                     updatedLot.price = bid;
 
                     final IWsBid newBid = new IWsBid(bidNumber, UserUtils.getCurrentUser(), lot.getId(), bid, !privateCheckBox.isSelected());

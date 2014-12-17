@@ -38,7 +38,11 @@ public class InterfaceUtilsTest {
         testBid2 = new IWsBid(2, testUser, 1, 2.00, false);
         testBid3 = new IWsBid(3, testUser, 1, 3.00, false);
 
-        testLot1.history = ",1,2,3";
+        testLot1.history = new ArrayList<Integer>();
+
+        testLot1.history.add(1);
+        testLot1.history.add(2);
+        testLot1.history.add(3);
 
         space = SpaceUtils.getSpace();
 

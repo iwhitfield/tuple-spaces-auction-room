@@ -2,6 +2,8 @@ package com.zackehh.auction;
 
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+
 import static org.testng.Assert.*;
 
 public class IWsLotTest {
@@ -11,12 +13,14 @@ public class IWsLotTest {
     public void testIWsLotInitializations() throws Exception {
         Integer id = 1;
         IWsUser user = new IWsUser("Test");
-        String history = ",1,";
+        ArrayList<Integer> history = new ArrayList<Integer>();
         String name = "Test Lot";
         Double price = 5.00;
         String description = "This is a test lot.";
         Boolean ended = true;
         Boolean markedForRemoval = false;
+
+        history.add(1);
 
         IWsLot nullLot = new IWsLot();
 
@@ -29,7 +33,7 @@ public class IWsLotTest {
         assertFalse(nullLot.hasEnded());
         assertFalse(nullLot.isMarkedForRemoval());
 
-        assertEquals(nullLot.getHistory(), ",");
+        assertEquals(nullLot.getHistory(), new ArrayList<Integer>());
         assertEquals(nullLot.getLatestBid(), null);
         assertEquals(nullLot.asObjectArray(), new Object[]{ null, null, null, null, "Running" });
 
@@ -58,8 +62,8 @@ public class IWsLotTest {
     @SuppressWarnings({"EqualsBetweenInconvertibleTypes", "EqualsWithItself", "ObjectEqualsNull"})
     @Test
     public void testIWsLotEquals() throws Exception {
-        IWsLot lot1 = new IWsLot(1, new IWsUser("Test"), ",", "Test", (double) 5, "Testing", true, true);
-        IWsLot lot2 = new IWsLot(1, new IWsUser("Test"), ",", "Test", (double) 5, "Testing", true, true);
+        IWsLot lot1 = new IWsLot(1, new IWsUser("Test"), new ArrayList<Integer>(), "Test", (double) 5, "Testing", true, true);
+        IWsLot lot2 = new IWsLot(1, new IWsUser("Test"), new ArrayList<Integer>(), "Test", (double) 5, "Testing", true, true);
 
         assertTrue(lot1.equals(lot2));
         assertTrue(lot1.equals(lot1));
@@ -75,13 +79,17 @@ public class IWsLotTest {
     public void testIWsLotGetLatestBid() throws Exception {
         IWsLot lot = new IWsLot();
 
-        lot.history = ",1,2,3,4,5";
+        lot.getHistory().add(1);
+        lot.getHistory().add(2);
+        lot.getHistory().add(3);
+        lot.getHistory().add(4);
+        lot.getHistory().add(5);
         assertEquals(lot.getLatestBid().intValue(), 5);
 
-        lot.history += ",6";
+        lot.getHistory().add(6);
         assertEquals(lot.getLatestBid().intValue(), 6);
 
-        lot.history += ",7";
+        lot.getHistory().add(7);
         assertEquals(lot.getLatestBid().intValue(), 7);
     }
 
