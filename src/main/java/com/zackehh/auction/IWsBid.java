@@ -9,7 +9,7 @@ import java.util.Objects;
  * The main Bid object to be dealt with when bidding on lots.
  * This object implements Entry to allow storage in a given JavaSpace
  * and provides constructors to provide easy retrieval from the space.
- * Ties to a user id and keeps track of whether the bid was a private
+ * Ties to a user and keeps track of whether the bid was a private
  * bid or not.
  */
 public class IWsBid implements Entry {
@@ -118,7 +118,7 @@ public class IWsBid implements Entry {
      * Shorthand for checking if this bid should be
      * visible to the current user.
      *
-     * @return true         if the bid is anonymous
+     * @return true     if the bid is anonymous
      */
     public Boolean isAnonymous(IWsLot lot) {
         return  lot.getId().equals(getItemId()) &&
@@ -128,14 +128,56 @@ public class IWsBid implements Entry {
     }
 
     /**
-     * Setter for the userId field. This is used
-     * to allow overriding the field in the case
-     * of an anonymous bid.
+     * Public setter for the id field.
      *
-     * @param user          the id to set to
+     * @param id        the Integer id
      */
-    public void setUserId(IWsUser user) {
+    public IWsBid setId(Integer id){
+        this.id = id;
+        return this;
+    }
+
+    /**
+     * Public setter for the user field.
+     *
+     * @param user      the IWsUser user
+     */
+    public IWsBid setUser(IWsUser user){
         this.user = user;
+        return this;
+    }
+
+    /**
+     * Public setter for the itemId field.
+     *
+     * @param itemId    the Integer itemId
+     */
+    @SuppressWarnings("unused")
+    public IWsBid setItemId(Integer itemId){
+        this.itemId = itemId;
+        return this;
+    }
+
+    /**
+     * Public setter for the price field.
+     *
+     * @param price     the Double price
+     */
+    @SuppressWarnings("unused")
+    public IWsBid setPrice(Double price){
+        this.price = price;
+        return this;
+    }
+
+    /**
+     * Public setter for the visible field.
+     *
+     * @param visible   the Boolean visible
+     */
+    @SuppressWarnings("unused")
+    public IWsBid setVisible(Boolean visible){
+        this.visible = visible;
+        return this;
     }
 
     /**

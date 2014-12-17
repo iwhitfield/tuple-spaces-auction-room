@@ -12,7 +12,7 @@ import net.jini.core.entry.Entry;
 public class IWsSecretary implements Entry {
 
     /**
-     * The id of the latest bid placed in the space.
+     * The id of the latest item in the Space.
      */
     public Integer itemNumber;
 
@@ -22,32 +22,32 @@ public class IWsSecretary implements Entry {
     public IWsSecretary(){ }
 
     /**
-     * Takes a value for both id trackers. This is usually set to
-     * 0 as the only need to initialize a Secretary is if there is
-     * none already in the space - i.e. there is no data.
+     * Takes a value for the id to start tracking from.
+     * This is usually called only once to initialize the
+     * first IWsSecretary with 0.
      *
-     * @param itemNumber     the lot to start on
+     * @param itemNumber     the item number to start on
      */
     public IWsSecretary(int itemNumber){
         this.itemNumber = itemNumber;
     }
 
     /**
-     * Getter for the bidNumber property. Returns the id of the
-     * latest bid to be added to the space.
+     * Getter for the itemNumber property. Returns the id of the
+     * latest item to be added to the Space.
      *
-     * @return Integer      the bid id
+     * @return Integer      the item id
      */
     public Integer getItemNumber(){
         return itemNumber;
     }
 
     /**
-     * Helper to increment the bidNumber value and return
-     * the new value. Used when a new bid will be added
+     * Helper to increment the itemNumber value and return
+     * the new value. Used when a new item will be added
      * to the space.
      *
-     * @return Integer      the new bid id
+     * @return Integer      the new item id (after addition)
      */
     public Integer addNewItem(){
         return ++itemNumber;

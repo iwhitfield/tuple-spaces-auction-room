@@ -59,7 +59,7 @@ public class LotCard extends JPanel {
     /**
      * The label allowing the seller to accept a bid.
      */
-    private final JLabel acceptBid;
+    private final JLabel acceptBidOrRemoveLot;
 
     /**
      * The label displaying the current price of the lot.
@@ -81,6 +81,10 @@ public class LotCard extends JPanel {
      */
     private final JPanel cards;
 
+    private final AcceptBidListener acceptBidListener;
+
+    private final RemoveLotListener removeLotListener;
+
     /**
      * Initializes a new card based on the given lot, which
      * allows the user to place a bid on an item and allows
@@ -95,18 +99,20 @@ public class LotCard extends JPanel {
     public LotCard(final JPanel cards, IWsLot lotForCard) {
         super();
 
+        // Set required fields from params
         this.cards = cards;
-
         this.space = SpaceUtils.getSpace();
 
+        // Refresh the lot, in case state has changed
         IWsLot baseLot = lotForCard;
         try {
             IWsLot templateLot = new IWsLot(lotForCard.getId());
             baseLot = (IWsLot) space.read(templateLot, null, Constants.SPACE_TIMEOUT);
         } catch(Exception e){
-            e.printStackTrace();
+            e.printStackTrace(); // doesn't matter, UI will handle it
         }
 
+        // Store the last known good version of the lot
         this.lot = baseLot;
 
         setLayout(new BorderLayout());
@@ -117,51 +123,73 @@ public class LotCard extends JPanel {
             NewBidListener bidListener = new NewBidListener();
             LotChangeListener lotListener = new LotChangeListener();
 
-            // generate the templates
+            // Generate the templates
             IWsBid bidTemplate = new IWsBid(null, null, lot.getId(), null, null);
             IWsItemRemover removerTemplate = new IWsItemRemover(lot.getId(), null, null);
 
-            // add the listener
+            // Ensures all listeners are set to notify
             space.notify(bidTemplate, null, bidListener.getListener(), Lease.FOREVER, null);
             space.notify(removerTemplate, null, lotListener.getListener(), Lease.FOREVER, null);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+        // Create a new main panel with a BorderLayout
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
 
+        // Set a back button to return to the main UI
         JLabel back = new JLabel("Back");
         back.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
+                // Remove the current card
                 cards.remove(LotCard.this);
             }
         });
 
+        // Add the back button to the main frame
         panel.add(back, BorderLayout.WEST);
 
+        // Create any needed labels
         placeBid = new JLabel("Place Bid");
-        acceptBid = new JLabel("Accept Latest Bid");
+        acceptBidOrRemoveLot = new JLabel("Accept Latest Bid");
         currentPrice = new JLabel();
 
+        // Setup the removal and accept bid listeners
+        acceptBidListener = new AcceptBidListener(lot, currentPrice);
+        removeLotListener = new RemoveLotListener(lot);
+
+        // Ensure a lot has not ended (this should always be true)
         if(!lot.hasEnded()) {
+
+            // If the user is the Seller of the lot
             if (UserUtils.getCurrentUser().getId().matches(lot.getUser().getId())) {
+
+                // If there are no bids, the Seller can remove the lot
                 if(lot.getLatestBid() == null){
-                    acceptBid.setText("Remove Lot");
-                    acceptBid.addMouseListener(new RemoveLotListener(lot));
+                    // Set the new text and add a removal listener
+                    acceptBidOrRemoveLot.setText("Remove Lot");
+                    acceptBidOrRemoveLot.addMouseListener(removeLotListener);
                 } else {
-                    acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
+                    // Add a listener to accept the last bid
+                    acceptBidOrRemoveLot.addMouseListener(acceptBidListener);
                 }
-                panel.add(acceptBid, BorderLayout.EAST);
+
+                // Add the label to the main frame
+                panel.add(acceptBidOrRemoveLot, BorderLayout.EAST);
+
             } else {
+                // Allow the user to place a bid if desired
                 placeBid.addMouseListener(new PlaceBidListener(lot));
                 panel.add(placeBid, BorderLayout.EAST);
             }
         }
 
+        // Add the upper panel to the UI
         add(panel, BorderLayout.NORTH);
 
+        // The fields we're displaying information for
         String[] labels = {
             "ID",
             "User ID",
@@ -169,45 +197,60 @@ public class LotCard extends JPanel {
             "Item Description"
         };
 
-        int numPairs = labels.length;
-
-        JPanel p = new JPanel(new GridLayout(numPairs + 1, 2));
+        // Create a GridLayout matching the above labels length
+        JPanel p = new JPanel(new GridLayout(labels.length + 1, 2));
         p.setBorder(BorderFactory.createEmptyBorder(-8, 0, 10, 0));
 
         try {
+            // For each label, call the corresponding getter in the
+            // IWsLot class. All methods are camelCase forms of the
+            // above labels, so this is a simple way of dynamically
+            // adding new fields to the UI without having to rewrite
+            // the UI components.
             for (String label : labels) {
+                // Add the new label to the left side of the panel
                 JLabel l = new JLabel(label + ": ", SwingConstants.RIGHT);
                 p.add(l);
-                Class<?> c = lot.getClass();
 
+                // Find the corresponding method for the label
+                Class<?> c = lot.getClass();
                 Method method = c.getMethod(InterfaceUtils.toCamelCase("get " + label, " "));
 
+                // Get the string value of the returned value
                 String valueOfField = method.invoke(lot) + "";
 
+                // Add a label with the value against the field label
                 JLabel textLabel = new JLabel(valueOfField);
                 l.setLabelFor(textLabel);
                 p.add(textLabel);
             }
         } catch (Exception e) {
-            // will never happen
+            // Will never happen, because we control the fields and methods
         }
 
+        // Grab the history of IWsBid from the Space
         bidHistory = InterfaceUtils.getVectorBidMatrix(lot);
 
+        // Behaviour changes based on active lots
         if(lot.hasEnded()){
+            // Display the winner and the price the item was won for
             currentPriceLabel = new JLabel("Won by " + bidHistory.get(0).get(0) + " -", SwingConstants.RIGHT);
             currentPrice.setText(" Price: " + InterfaceUtils.getDoubleAsCurrency(lot.getCurrentPrice()));
         } else {
+            // Display the current price of the item
             currentPriceLabel = new JLabel("Current Price: ", SwingConstants.RIGHT);
             currentPrice.setText(InterfaceUtils.getDoubleAsCurrency(lot.getCurrentPrice()));
         }
 
+        // Add the Current Price labels to the panel
         currentPriceLabel.setLabelFor(currentPrice);
         p.add(currentPriceLabel);
         p.add(currentPrice);
 
+        // Add the panel to the frame
         add(p);
 
+        // Create a new BaseTable with two columns
         bidTable = new BaseTable(bidHistory, new Vector<String>(){{
             add("Buyer ID");
             add("Bid Amount");
@@ -216,6 +259,7 @@ public class LotCard extends JPanel {
         // Add the table to a scrolling pane
         JScrollPane itemListPanel = new JScrollPane(bidTable);
 
+        // Add the scrolling pane to the UI
         add(itemListPanel, BorderLayout.SOUTH);
     }
 
@@ -238,24 +282,31 @@ public class LotCard extends JPanel {
         @Override
         public void notify(RemoteEvent ev) {
             try {
-                IWsLot template = new IWsLot(lot.getId());
-                final IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+                // Grab the latest version of the current lot and the latest bid from the Space
+                final IWsLot latestLot = (IWsLot) space.read(new IWsLot(lot.getId()), null, Constants.SPACE_TIMEOUT);
+                final IWsBid latestBid = (IWsBid) space.read(new IWsBid(latestLot.getLatestBid()), null, Constants.SPACE_TIMEOUT);
 
-                IWsBid bidTemplate = new IWsBid(latestLot.getLatestBid());
-                final IWsBid latestBid = (IWsBid) space.read(bidTemplate, null, Constants.SPACE_TIMEOUT);
-
+                // Format the lot for the BaseTable
                 Vector<String> insertion = new Vector<String>(){{
                     add(latestBid.isAnonymous(latestLot) ? "Anonymous User" : latestBid.getUser().getId());
                     add(InterfaceUtils.getDoubleAsCurrency(latestBid.getPrice()));
                 }};
 
+                // If there is a latest bid
                 if(latestLot.getLatestBid() != null){
-                    acceptBid.setText("Accept Latest Bid");
-                    acceptBid.addMouseListener(new AcceptBidListener(lot, currentPrice));
+                    // Allow the Seller to now accept the bids instead of remove them
+                    acceptBidOrRemoveLot.setText("Accept Latest Bid");
+                    acceptBidOrRemoveLot.addMouseListener(acceptBidListener);
+                    acceptBidOrRemoveLot.removeMouseListener(removeLotListener);
                 }
 
+                // Add the bid to the top of the table
                 bidHistory.add(0, insertion);
+
+                // Redraw the table to ensure up to date
                 bidTable.revalidate();
+
+                // Set the new price to the Current Price label
                 currentPrice.setText(InterfaceUtils.getDoubleAsCurrency(latestLot.getCurrentPrice()));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -284,22 +335,35 @@ public class LotCard extends JPanel {
         @Override
         public void notify(RemoteEvent ev) {
             try {
-                IWsItemRemover template = new IWsItemRemover(lot.getId(), null, null);
-                final IWsItemRemover remover = (IWsItemRemover) space.read(template, null, Constants.SPACE_TIMEOUT);
+                // Read the latest IWsItemRemover from the Space (there should only be the one we want)
+                final IWsItemRemover remover = (IWsItemRemover) space.read(new IWsItemRemover(lot.getId()), null, Constants.SPACE_TIMEOUT);
+
+                // If it was removed due to being won
                 if(remover.ended){
+                    // Grab the winning bid from the table
                     Vector<String> winningBid = bidHistory.get(0);
+
+                    // Grab the winning user and the winning price
                     String winningId = winningBid.get(0);
                     String winningPrice = winningBid.get(1);
 
-                    acceptBid.setVisible(false);
+                    // Remove the ability to remove lot and accept/place bid
+                    acceptBidOrRemoveLot.setVisible(false);
                     placeBid.setVisible(false);
+
+                    // Set the winning labels
                     currentPriceLabel.setText("Won by " + winningId + " -");
                     currentPrice.setText(" Price: " + winningPrice);
 
+                    // Short circuit
                     return;
                 }
+
+                // If the Seller removed the item
                 if(remover.removed){
+                    // Prompt that the lot was removed
                     JOptionPane.showMessageDialog(null, "This lot has been removed!");
+                    // Return to the main UI
                     cards.remove(LotCard.this);
                 }
             } catch (Exception e) {

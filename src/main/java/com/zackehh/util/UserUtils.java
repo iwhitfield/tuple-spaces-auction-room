@@ -11,7 +11,7 @@ import com.zackehh.auction.IWsUser;
 public final class UserUtils {
 
     /**
-     * The username of the current registered user. This should
+     * The currently registered user in the client. This should
      * not change throughout the lifecycle of the application,
      * however this is provided so we have the potential to.
      */
@@ -29,7 +29,7 @@ public final class UserUtils {
      * Returns the current username associated with the application.
      * This should never be null, but it's not guaranteed.
      *
-     * @return String       the current username
+     * @return String       the current user
      */
     public static IWsUser getCurrentUser(){
         return user;

@@ -10,7 +10,7 @@ import java.util.Objects;
  * The main Lot object to be dealt with when listing the items
  * available in the auction. This object implements Entry to allow
  * storage in a given JavaSpace and provides constructors to provide
- * easy retrieval from the space. Ties to a user id so we know who
+ * easy retrieval from the space. Ties to a user so we know who
  * is eligible to accept a given bid.
  */
 public class IWsLot implements Entry {
@@ -103,12 +103,17 @@ public class IWsLot implements Entry {
     /**
      * Getter for the user id of the lot.
      *
-     * @return String       the user id
+     * @return IWsUser      the user
      */
     public IWsUser getUser(){
         return user;
     }
 
+    /**
+     * Getter for the user id of the lot.
+     *
+     * @return String       the user id
+     */
     public String getUserId(){
         return user.getId();
     }
@@ -170,6 +175,89 @@ public class IWsLot implements Entry {
      */
     public Boolean isMarkedForRemoval(){
         return markedForRemoval != null && markedForRemoval;
+    }
+
+    /**
+     * Public setter for the id field.
+     *
+     * @param id            the Integer id
+     */
+    public IWsLot setId(Integer id){
+        this.id = id;
+        return this;
+    }
+
+    /**
+     * Public setter for the user field.
+     *
+     * @param user          the IWsUser user
+     */
+    public IWsLot setUser(IWsUser user){
+        this.user = user;
+        return this;
+    }
+
+    /**
+     * Public setter for the history field.
+     *
+     * @param history       the ArrayList history
+     */
+    @SuppressWarnings("unused")
+    public IWsLot setHistory(ArrayList<Integer> history){
+        this.history = history;
+        return this;
+    }
+
+    /**
+     * Public setter for the name field.
+     *
+     * @param name          the String name
+     */
+    @SuppressWarnings("unused")
+    public IWsLot setName(String name){
+        this.name = name;
+        return this;
+    }
+
+    /**
+     * Public setter for the price field.
+     *
+     * @param price         the Double price
+     */
+    public IWsLot setPrice(Double price){
+        this.price = price;
+        return this;
+    }
+
+    /**
+     * Public setter for the description field.
+     *
+     * @param description   the String description
+     */
+    @SuppressWarnings("unused")
+    public IWsLot setDescription(String description){
+        this.description = description;
+        return this;
+    }
+
+    /**
+     * Public setter for the ended field.
+     *
+     * @param ended         the Boolean ended
+     */
+    public IWsLot setEnded(Boolean ended){
+        this.ended = ended;
+        return this;
+    }
+
+    /**
+     * Public setter for the markedForRemoval field.
+     *
+     * @param markedForRemoval  the Boolean markedForRemoval
+     */
+    public IWsLot setMarkedForRemoval(Boolean markedForRemoval){
+        this.markedForRemoval = markedForRemoval;
+        return this;
     }
 
     /**

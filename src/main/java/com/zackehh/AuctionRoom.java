@@ -37,12 +37,6 @@ public class AuctionRoom extends JFrame {
     private final JavaSpace space;
 
     /**
-     * The main AuctionCard, which is the overlay for the main
-     * window of the application.
-     */
-    private AuctionCard auctionCard;
-
-    /**
      * Main entry to the AuctionRoom. This prompts for a
      * user's name as a prerequisite to using the application.
      * Should this not be provided, the program will exit.
@@ -76,6 +70,8 @@ public class AuctionRoom extends JFrame {
      * AuctionCard.
      */
     public AuctionRoom() {
+
+        // Initialise a local Space, exit on failure
         space = SpaceUtils.getSpace();
         if (space == null){
             System.err.println("Failed to find the JavaSpace");
@@ -83,90 +79,84 @@ public class AuctionRoom extends JFrame {
         }
 
         try {
+            // Ensure an IWsLotSecretary lives in the Space
             Object o = space.read(new IWsLotSecretary(), null, 1000);
             if(o == null){
                 space.write(new IWsLotSecretary(0), null, Lease.FOREVER);
             }
+
+            // Ensure an IWsBidSecretary lives in the Space
             o = space.read(new IWsBidSecretary(), null, 1000);
             if(o == null){
                 space.write(new IWsBidSecretary(0), null, Lease.FOREVER);
             }
         } catch(Exception e){
-            System.err.println("Died trying to read from the space: " + e);
             e.printStackTrace();
-            System.exit(1);
+            System.exit(1); // We cannot do anything with no good Space connection
         }
 
-        initComponents();
-        pack();
-        setResizable(false);
-        setVisible(true);
+        // Set the application title as well as the username
+        setTitle(Constants.APPLICATION_TITLE + " - " + UserUtils.getCurrentUser().getId());
 
-        InitialLoadingRunnable initialLoadingRunnable = new InitialLoadingRunnable();
-
-        new Thread(initialLoadingRunnable).start();
-    }
-
-    /**
-     * Main body of UI creation. Creates main frame and
-     * attaches all needed listeners. Initializes the main
-     * CardLayout which will hold any cards created during
-     * execution of the program.
-     */
-    private void initComponents() {
-        setTitle(Constants.APPLICATION_TITLE);
+        // Exit on the exit button press
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent evt) {
                 System.exit(0);
             }
         });
 
+        // Set the container BorderLayout
         Container cp = getContentPane();
         cp.setLayout(new BorderLayout());
 
+        // Create a new card layout
         JPanel cards = new JPanel(new CardLayout());
 
-        auctionCard = new AuctionCard(lots, cards);
+        // Create a new AuctionCard
+        final AuctionCard auctionCard = new AuctionCard(lots, cards);
 
+        // Add the card to the CardLayout
         cards.add(auctionCard, Constants.AUCTION_CARD);
 
+        // Add the CardLayout to the Container
         cp.add(cards);
-    }
 
-    /**
-     * Initial loader for the AuctionRoom. Loads a list of unfinished
-     * and current Lots. This is to ensure that new users cannot access
-     * lots that may have already been scheduled to be removed from the
-     * space.
-     */
-    private class InitialLoadingRunnable implements Runnable {
+        // Pack the UI and set the frame
+        pack();
+        setResizable(false);
+        setVisible(true);
 
-        /**
-         * Reads all items that are available in the space and lists
-         * them in the table. Also stores inside the main list class.
-         * Does not include ended or lots marked for removal, to avoid
-         * potential race conditions with lots being removed as a user
-         * tries to view them.
-         */
-        @Override
-        public void run() {
-            DefaultTableModel model = auctionCard.getTableModel();
-            try {
-                IWsLotSecretary secretary = (IWsLotSecretary) space.read(new IWsLotSecretary(), null, Constants.SPACE_TIMEOUT);
-                int i = 0;
-                while(i <= secretary.getItemNumber()) {
-                    IWsLot template = new IWsLot(i++ + 1, null, null, null, null, null, false, false);
-                    if(space.readIfExists(template, null, 1000) != null) {
-                        IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+        // Start the initial loading of the existing items
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                DefaultTableModel model = auctionCard.getTableModel();
+                try {
+                    // Read the latest known version of the IWsSecretary from the Space
+                    // It could be necessary to re-read this on each iteration on the loop,
+                    // but it does not seem to be needed for an application of this scale.
+                    IWsLotSecretary secretary = (IWsLotSecretary) space.read(new IWsLotSecretary(), null, Constants.SPACE_TIMEOUT);
+
+                    int i = 0;
+                    // Loop for all item ids
+                    while(i <= secretary.getItemNumber()) {
+
+                        // Search for the next template in the Space
+                        IWsLot template = new IWsLot(i++ + 1, null, null, null, null, null, false, false);
+
+                        // If the object exists in the space
+                        IWsLot latestLot = (IWsLot) space.readIfExists(template, null, 1000);
+
+                        // Add any existing lots to the tables
                         if (latestLot != null) {
                             lots.add(latestLot);
                             model.addRow(latestLot.asObjectArray());
                         }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }
+        }).start();
     }
 }

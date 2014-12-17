@@ -47,11 +47,6 @@ public final class Constants {
     public static final long BID_LEASE_TIMEOUT = Math.round(LOT_LEASE_TIMEOUT * 1.5);
 
     /**
-     * The default polling time to poll any objects in the space
-     */
-    public static final long POLL_TIMEOUT = 1000 * 10;
-
-    /**
      * The default timeout for any JavaSpace related operations
      */
     public static final long SPACE_TIMEOUT = 1500;

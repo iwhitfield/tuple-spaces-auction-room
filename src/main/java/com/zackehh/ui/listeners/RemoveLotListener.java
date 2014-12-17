@@ -64,21 +64,26 @@ public class RemoveLotListener extends MouseAdapter {
         super.mouseClicked(event);
         Transaction transaction = null;
         try {
+            // Create Transaction
             Transaction.Created trc = TransactionFactory.create(manager, 3000);
             transaction = trc.transaction;
 
+            // Refresh current IWsLot from the Space
             IWsLot template = new IWsLot(lot.getId());
             IWsLot updatedLot = (IWsLot) space.read(template, transaction, Constants.SPACE_TIMEOUT);
 
-            updatedLot.markedForRemoval = true;
+            // Mark the lot for removal
+            updatedLot.setMarkedForRemoval(true);
 
+            // Add a new IWsItemRemover recording the changes
             space.write(new IWsItemRemover(lot.getId(), false, true), transaction, Constants.TEMP_OBJECT);
 
+            // Commit the transaction
             transaction.commit();
 
+            // Store the change locally
             lot = updatedLot;
         } catch(Exception e) {
-            System.err.println("Error when removing bid: " + e);
             e.printStackTrace();
             try {
                 if(transaction != null){

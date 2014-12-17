@@ -47,11 +47,18 @@ public class InterfaceUtils {
      * @return Double       a valid currency string
      */
     public static String getDoubleAsCurrency(Double value){
+        // Create enforcer
         DecimalFormat currencyEnforcer = new DecimalFormat("0.00");
+
+        // If value is null, short circuit
         if(value == null){
             return null;
         }
+
+        // Format currency
         String currency = currencyEnforcer.format(value);
+
+        // Handle negative values
         if(currency.charAt(0) == '-'){
             return "-£" + currency.substring(1);
         } else {
@@ -74,32 +81,40 @@ public class InterfaceUtils {
     public static ArrayList<IWsBid> getBidHistory(IWsLot lot) {
         JavaSpace space = SpaceUtils.getSpace();
 
+        // Initialise a list to store history
         ArrayList<IWsBid> bidHistory = new ArrayList<IWsBid>();
 
         try {
-            IWsLot lotTemplate = new IWsLot(lot.getId(), null, null, null, null, null, null, false);
-            IWsLot refreshedLot = (IWsLot) space.read(lotTemplate, null, Constants.SPACE_TIMEOUT);
+            // Fetch the latest version of the lot
+            IWsLot refreshedLot = (IWsLot) space.read(new IWsLot(lot.getId()), null, Constants.SPACE_TIMEOUT);
 
+            // Get the history from the lot
             ArrayList<Integer> bids = refreshedLot.getHistory();
 
+            // If no history, short circuit
             if(bids.size() == 0){
                 return bidHistory;
             }
 
+            // Add all bids by id
             for(Integer bidId : bids){
+                // Lookup the bid with the given id
                 IWsBid template = new IWsBid(bidId, null, lot.getId(), null, null);
                 IWsBid bidItem = ((IWsBid) space.read(template, null, Constants.SPACE_TIMEOUT));
 
+                // If the bid is anonymous, reset the user (locally)
                 if(bidItem.isAnonymous(refreshedLot)) {
-                    bidItem.setUserId(new IWsUser("Anonymous Buyer"));
+                    bidItem.setUser(new IWsUser("Anonymous Buyer"));
                 }
 
+                // Add the bid to the history list
                 bidHistory.add(bidItem);
             }
         } catch(Exception e){
             e.printStackTrace();
         }
 
+        // Sort bids by price, just in case order is incorrect
         Collections.sort(bidHistory, new Comparator<IWsBid>() {
             @Override
             public int compare(IWsBid bid1, IWsBid bid2) {
@@ -119,12 +134,17 @@ public class InterfaceUtils {
      * @return Vector       a matrix of IWsBid values
      */
     public static Vector<Vector<String>> getVectorBidMatrix(IWsLot lot){
+        // Get the list of historic bids
         ArrayList<IWsBid> bids = getBidHistory(lot);
 
+        // Initialise empty Vector
         Vector<Vector<String>> values = new Vector<Vector<String>>();
 
         for(int iY = 0; iY < bids.size(); iY++){
+            // Grab the bid at the index
             final IWsBid bid = bids.get(iY);
+
+            // Add each bid as a vector
             values.add(iY, new Vector<String>(){{
                 add(bid.getUser().getId());
                 add(InterfaceUtils.getDoubleAsCurrency(bid.getPrice()));
@@ -143,9 +163,13 @@ public class InterfaceUtils {
      * @return String       the camelCase string
      */
     public static String toCamelCase(String str, String split){
+        // Convert to lower case and split on splitter
         String[] parts = str.toLowerCase().split(split);
-        String camelCaseString = "";
+
         int i = 0;
+        String camelCaseString = "";
+
+        // For each part upper case the first char if needed
         for (String part : parts){
             if(i++ > 0) {
                 camelCaseString +=
@@ -155,6 +179,8 @@ public class InterfaceUtils {
                 camelCaseString += part;
             }
         }
+
+        // Return camelCase version only if string has a split
         return camelCaseString.length() == 0 || parts.length == 1 ? str : camelCaseString;
     }
 

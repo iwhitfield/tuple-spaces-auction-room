@@ -32,7 +32,7 @@ public class GenericNotifier implements RemoteEventListener {
      * that any classes inheriting from GenericNotificationListener
      * do not have to explicitly create their own Exporter.
      */
-    public GenericNotifier() {
+    protected GenericNotifier() {
         try{
             remoteExporter =
                     new BasicJeriExporter(TcpServerEndpoint.getInstance(0),

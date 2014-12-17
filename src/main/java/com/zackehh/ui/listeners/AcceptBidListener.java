@@ -73,28 +73,37 @@ public class AcceptBidListener extends MouseAdapter {
      */
     @Override
     public void mouseClicked(MouseEvent event){
-        JPanel modal = new JPanel();
 
+        // Create and show a modal
+        JPanel modal = new JPanel();
         modal.add(new JLabel("Are you sure you want to accept the bid of " + currentPrice.getText() + "?"));
 
+        // Record user result
         int result = JOptionPane.showConfirmDialog(null, modal,
                 "Accept Bid?", JOptionPane.OK_CANCEL_OPTION);
 
+        // If the user accepts
         if(result == JOptionPane.OK_OPTION){
+
             Transaction transaction = null;
             try {
+                // Create a new Transaction
                 Transaction.Created trc = TransactionFactory.create(manager, 3000);
                 transaction = trc.transaction;
 
-                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, false);
-                IWsLot updatedLot = (IWsLot) space.read(template, transaction, Constants.SPACE_TIMEOUT);
+                // Refresh the current lot from the Space
+                IWsLot updatedLot = (IWsLot) space.read(new IWsLot(lot.getId()), transaction, Constants.SPACE_TIMEOUT);
 
-                updatedLot.ended = true;
+                // Mark the lot as ended, locally
+                updatedLot.setEnded(true);
 
+                // Write a new IWsItemRemover recording the changes
                 space.write(new IWsItemRemover(lot.getId(), true, false), transaction, Constants.TEMP_OBJECT);
 
+                // Commit the Transaction
                 transaction.commit();
 
+                // Update the IWsLot locally (although this is also handled in notify)
                 lot = updatedLot;
             } catch(Exception e) {
                 e.printStackTrace();

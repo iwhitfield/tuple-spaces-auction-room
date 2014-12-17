@@ -32,7 +32,7 @@ import java.util.ArrayList;
  * The main body of the application's UI. This card displays
  * the list of lots in the auction currently, along with their
  * information. Clicking a row allows the user to go to a card
- * specifically based on the chosen lot to allow bid's etc.
+ * specifically based on the chosen lot to allow bids etc.
  * This card also provides a way for a user to add a new lot.
  */
 public class AuctionCard extends JPanel {
@@ -70,85 +70,100 @@ public class AuctionCard extends JPanel {
     public AuctionCard(final ArrayList<IWsLot> lots, final JPanel cards){
         super(new BorderLayout());
 
+        // Setup required parameters
         this.lots = lots;
-
         this.manager = SpaceUtils.getManager();
-
         this.space = SpaceUtils.getSpace();
 
+        // Setup the main Grid layout to contain the input form
         JPanel fieldInputPanel = new JPanel(new GridLayout(4, 2));
         fieldInputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        final JLabel itemNameLabel = new JLabel("Name of Item: ");
+        // Set item name input
         final JTextField itemNameIn = new JTextField("", 12);
-        final JLabel itemDescriptionLabel = new JLabel("Item description: ");
-        final JTextField itemDescriptionIn = new JTextField("", 1);
-        final JLabel startingPriceLabel = new JLabel("Starting Price: ");
-        final JTextField startingPriceIn = new JTextField("", 6);
-        final JLabel resultTextLabel = new JLabel("Result: ");
-        final JResultText resultTextOut = new JResultText();
-
-        fieldInputPanel.add(itemNameLabel);
+        fieldInputPanel.add(new JLabel("Name of Item: "));
         fieldInputPanel.add(itemNameIn);
-        fieldInputPanel.add(itemDescriptionLabel);
+
+        // Set item description input
+        final JTextField itemDescriptionIn = new JTextField("", 1);
+        fieldInputPanel.add(new JLabel("Item description: "));
         fieldInputPanel.add(itemDescriptionIn);
-        fieldInputPanel.add(startingPriceLabel);
+
+        // Set starting price input
+        final JTextField startingPriceIn = new JTextField("", 6);
+        fieldInputPanel.add(new JLabel("Starting Price: "));
         fieldInputPanel.add(startingPriceIn);
-        fieldInputPanel.add(resultTextLabel);
+
+        // Setup result output fields
+        final JResultText resultTextOut = new JResultText();
+        fieldInputPanel.add(new JLabel("Result: "));
         fieldInputPanel.add(resultTextOut);
 
+        // Add the layout to the panel
         add(fieldInputPanel, BorderLayout.NORTH);
 
-        JTextArea itemListOut = new JTextArea(30, 30);
-        itemListOut.setEditable(false);
-
+        // Create an initial base table with the given column names
         lotTable = new BaseTable(new String[0][5], new String[] {
                 "Lot ID", "Item Name", "Seller ID", "Current Price", "Status"
         });
 
+        // Add listener to the row click in the table
         lotTable.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent event) {
+                // Calculate the row based on the mouse positioning
                 int row = lotTable.rowAtPoint(event.getPoint());
+
+                // Only activate the listener on a double click
                 if (event.getClickCount() == 2) {
+
+                    // If the item has already ended, deny access and short circuit
                     if (lots.get(row).hasEnded()) {
                         JOptionPane.showMessageDialog(null, "This item has already ended!");
                         return;
                     }
+
+                    // Add a new card, using the selected lot
                     cards.add(new LotCard(cards, lots.get(row)), Constants.BID_CARD);
-                    CardLayout cl = (CardLayout) cards.getLayout();
-                    cl.show(cards, Constants.BID_CARD);
+
+                    // Display the new card
+                    ((CardLayout) cards.getLayout()).show(cards, Constants.BID_CARD);
                 }
             }
         });
 
         // Add the table to a scrolling pane
         JScrollPane itemListPanel = new JScrollPane(
-                lotTable,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+            lotTable,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
 
+        // Add the scrolling pane to the main panel
         add(itemListPanel, BorderLayout.CENTER);
 
-        JPanel bidListingPanel = new JPanel();
-        bidListingPanel.setLayout(new FlowLayout());
-
+        // Create an "Add Auction" button
         JButton addLotButton = new JButton();
         addLotButton.setText("Add Auction Item");
+
+        // Set the required listener
         addLotButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
+                // Refresh any prior result text
                 resultTextOut.setText("");
 
+                // Gather user inputs
                 String itemName = itemNameIn.getText();
                 String itemDescription = itemDescriptionIn.getText();
                 Number startingPrice = InterfaceUtils.getTextAsNumber(startingPriceIn);
                 Double potentialDouble = startingPrice == null ? 0 : startingPrice.doubleValue();
 
+                // Validate item details, short circuit if not met
                 if(itemName.length() == 0 || itemDescription.length() == 0){
                     resultTextOut.setText("Invalid item details!");
                     return;
                 }
 
+                // Validate price, short circuit if not met
                 if(startingPrice == null || potentialDouble == 0){
                     resultTextOut.setText("Invalid price!");
                     return;
@@ -156,30 +171,40 @@ public class AuctionCard extends JPanel {
 
                 Transaction transaction = null;
                 try {
+                    // Create a Transaction to handle the modifications
                     Transaction.Created trc = TransactionFactory.create(manager, 3000);
                     transaction = trc.transaction;
 
+                    // Pull the latest IWsLotSecretary from the space
                     IWsLotSecretary secretary = (IWsLotSecretary) space.take(new IWsLotSecretary(), transaction, Constants.SPACE_TIMEOUT);
 
+                    // Increment and retrieve the new item id
                     final int lotNumber = secretary.addNewItem();
+
+                    // Create a new lot based on the user input
                     IWsLot newLot = new IWsLot(lotNumber, UserUtils.getCurrentUser(), null, itemName, potentialDouble, itemDescription, false, false);
 
+                    // Write both the secretary and the lot to the space
                     space.write(newLot, transaction, Constants.LOT_LEASE_TIMEOUT);
                     space.write(secretary, transaction, Lease.FOREVER);
 
+                    // Commit the Transaction
                     transaction.commit();
 
+                    // Reset the input fields
                     itemNameIn.setText("");
                     itemDescriptionIn.setText("");
                     startingPriceIn.setText("");
+
+                    // Output a success message
                     resultTextOut.setText("Added Lot #" + lotNumber + "!");
 
                     lots.add(newLot);
                     getTableModel().addRow(newLot.asObjectArray());
                 } catch(Exception e) {
-                    System.err.println("Error when adding lot to the space: " + e);
                     e.printStackTrace();
                     try {
+                        // Abort existing Transactions
                         if(transaction != null){
                             transaction.abort();
                         }
@@ -190,12 +215,14 @@ public class AuctionCard extends JPanel {
 
             }
         });
-        bidListingPanel.add(addLotButton);
 
+        // Add the "Add Lot" button to the main frame
+        JPanel bidListingPanel = new JPanel(new FlowLayout());
+        bidListingPanel.add(addLotButton);
         add(bidListingPanel, BorderLayout.SOUTH);
 
-        // TODO: removeObject stuff
         try {
+            // Ensure that all listeners are set for notify
             space.notify(new IWsLotChange(), null, new LotChangeNotifier().getListener(), Lease.FOREVER, null);
             space.notify(new IWsLotSecretary(), null, new NewLotNotifier().getListener(), Lease.FOREVER, null);
             space.notify(new IWsItemRemover(), null, new RemoveLotFromAuctionNotifier().getListener(), Lease.FOREVER, null);
@@ -236,24 +263,28 @@ public class AuctionCard extends JPanel {
             DefaultTableModel model = getTableModel();
 
             try {
+                // Grab the latest version of the IWsLotSecretary and the latest lot from the Space
                 IWsLotSecretary secretary = (IWsLotSecretary) space.read(new IWsLotSecretary(), null, Constants.SPACE_TIMEOUT);
-                IWsLot template = new IWsLot(secretary.getItemNumber(), null, null, null, null, null, null, null);
-                IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
+                IWsLot latestLot = (IWsLot) space.read(new IWsLot(secretary.getItemNumber()), null, Constants.SPACE_TIMEOUT);
 
+                // Convert the lot to an Object[][]
                 Object[] insertion = latestLot.asObjectArray();
 
+                // Ensure the lot id does not already exist
                 int currentIndex = -1;
-                for(int i = 0; i < lots.size(); i++){
+                for(int i = 0, j = lots.size(); i < j; i++){
                     if(lots.get(i).getId().intValue() == latestLot.getId().intValue()){
                         currentIndex = i;
                         break;
                     }
                 }
 
+                // If it does not exist, insert new entry
                 if(currentIndex == -1) {
                     lots.add(latestLot);
                     model.addRow(insertion);
                 } else {
+                    // Update old entry (should never occur)
                     lots.set(currentIndex, latestLot);
                     model.setValueAt(insertion[3], currentIndex, 3);
                 }
@@ -280,26 +311,33 @@ public class AuctionCard extends JPanel {
             DefaultTableModel model = getTableModel();
 
             try {
+                // Read the latest IWsLotChange object from the Space (there should only be one)
                 IWsLotChange lotChange = (IWsLotChange) space.read(new IWsLotChange(), null, Constants.SPACE_TIMEOUT);
 
+                // Find the existing index of the lot with a matching id
                 int currentIndex = -1;
-                for(int i = 0; i < lots.size(); i++){
+                for(int i = 0, j = lots.size(); i < j; i++){
                     if(lots.get(i).getId().intValue() == lotChange.id){
                         currentIndex = i;
                         break;
                     }
                 }
 
+                // If there isn't one, other listeners will handle this
                 if(currentIndex == -1){
                     return;
                 }
 
+                // Take the lot from the index
                 IWsLot lot = lots.get(currentIndex);
 
-                lot.price = lotChange.getPrice();
+                // Apply the new price to the lot
+                lot.setPrice(lotChange.getPrice());
 
+                // Convert to an Object[][]
                 Object[] insertion = lot.asObjectArray();
 
+                // Replace the lot in the local list and table with the changed lot
                 lots.set(currentIndex, lot);
                 model.setValueAt(insertion[3], currentIndex, 3);
             } catch (Exception e) {
@@ -332,38 +370,46 @@ public class AuctionCard extends JPanel {
             DefaultTableModel model = getTableModel();
 
             try {
-                IWsItemRemover template = new IWsItemRemover();
-                IWsItemRemover remover = (IWsItemRemover) space.read(template, null, Constants.SPACE_TIMEOUT);
+                // Grab the latest IWsItemRemover from the Space (there should only be one).
+                IWsItemRemover remover = (IWsItemRemover) space.read(new IWsItemRemover(), null, Constants.SPACE_TIMEOUT);
 
+                // Find the lot with the matching lot id (if there is one)
                 int currentIndex = -1;
-                for (int i = 0; i < lots.size(); i++){
+                for (int i = 0, j = lots.size(); i < j; i++){
                     if (lots.get(i).getId().intValue() == remover.getId()){
                         currentIndex = i;
                         break;
                     }
                 }
 
+                // If the lot has ended
                 if(remover.hasEnded()){
+                    // Grab the lot at the current index
                     IWsLot lot = lots.get(currentIndex);
 
-                    lot.ended = true;
+                    // Set the ended field to true
+                    lot.setEnded(true);
 
+                    // Update the lot and table with the Ended status
                     lots.set(currentIndex, lot);
                     model.setValueAt("Ended", currentIndex, 4);
+
+                    // Display a dialog if the current user won the ended item
                     if(UserUtils.getCurrentUser().getId().matches(lot.getUser().getId())){
                         JOptionPane.showMessageDialog(null, "You just won " + lot.getItemName() + "!");
                     }
                 }
 
+                // If the IWsLot exists and was removed, remove it from the table
                 if(remover.hasBeenRemoved() && currentIndex > -1){
                     lots.remove(currentIndex);
                     model.removeRow(currentIndex);
                 }
 
-                IWsLot removeLot = new IWsLot();
-                removeLot.id = remover.getId();
-                space.takeIfExists(removeLot, null, 1000);
+                // Ensure that the matching lot is removed from the Space if it exists
+                space.takeIfExists(new IWsLot(remover.getId()), null, 1000);
 
+                // Remove all bids associated with the IWsLot
                 Object o;
                 do {
                     o = space.takeIfExists(new IWsBid(remover.id), null, 1000);

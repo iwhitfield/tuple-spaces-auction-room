@@ -42,7 +42,7 @@ public class IWsBidTest {
         assertTrue(bid1.equals(bid2));
         assertTrue(bid1.equals(bid1));
 
-        bid2.setUserId(null);
+        bid2.setUser(null);
 
         assertFalse(bid1.equals(bid2));
         assertFalse(bid1.equals(1));
