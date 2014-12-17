@@ -61,6 +61,13 @@ public class IWsLot implements Entry {
     public IWsLot(){ }
 
     /**
+     * Constructor to match purely based on id.
+     */
+    public IWsLot(Integer id){
+        this.id = id;
+    }
+
+    /**
      * Template constructor, used to ensure all fields can be set
      * for use when matching specific fields across the space.
      *
@@ -145,7 +152,7 @@ public class IWsLot implements Entry {
      * @return true         if ended
      */
     public Boolean hasEnded(){
-        return ended;
+        return ended != null && ended;
     }
 
     /**
@@ -156,7 +163,7 @@ public class IWsLot implements Entry {
      * @return true         if marked for removal
      */
     public Boolean isMarkedForRemoval(){
-        return markedForRemoval;
+        return markedForRemoval != null && markedForRemoval;
     }
 
     /**
@@ -185,7 +192,7 @@ public class IWsLot implements Entry {
         return new Object[]{
             id,
             name,
-            user.getId(),
+            user == null ? null : user.getId(),
             InterfaceUtils.getDoubleAsCurrency(price),
             hasEnded() ? "Ended" : "Running"
         };

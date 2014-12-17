@@ -33,6 +33,7 @@ public class IWsBidTest {
         assertEquals(bid.isPublic(), visible);
     }
 
+    @SuppressWarnings({"EqualsBetweenInconvertibleTypes", "EqualsWithItself", "ObjectEqualsNull"})
     @Test
     public void testIWsBidEquals() throws Exception {
         IWsBid bid1 = new IWsBid(1, new IWsUser("Test"), 5, (double) 5, true);
@@ -45,6 +46,7 @@ public class IWsBidTest {
 
         assertFalse(bid1.equals(bid2));
         assertFalse(bid1.equals(1));
+        assertFalse(bid1.equals(null));
     }
 
     @Test

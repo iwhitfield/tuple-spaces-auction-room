@@ -45,6 +45,13 @@ public class IWsBid implements Entry {
     public IWsBid(){ }
 
     /**
+     * Constructor to match purely based on id.
+     */
+    public IWsBid(Integer id){
+        this.id = id;
+    }
+
+    /**
      * Template constructor, used to ensure all fields can be set
      * for use when matching specific fields across the space.
      *

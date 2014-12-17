@@ -67,7 +67,7 @@ public class RemoveLotListener extends MouseAdapter {
             Transaction.Created trc = TransactionFactory.create(manager, 3000);
             transaction = trc.transaction;
 
-            IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, null);
+            IWsLot template = new IWsLot(lot.getId());
             IWsLot updatedLot = (IWsLot) space.read(template, transaction, Constants.SPACE_TIMEOUT);
 
             updatedLot.markedForRemoval = true;

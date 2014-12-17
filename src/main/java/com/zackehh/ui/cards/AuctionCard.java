@@ -366,7 +366,7 @@ public class AuctionCard extends JPanel {
 
                 Object o;
                 do {
-                    o = space.takeIfExists(new IWsBid(remover.id, null, null, null, null), null, 1000);
+                    o = space.takeIfExists(new IWsBid(remover.id), null, 1000);
                 } while(o != null);
             } catch (Exception e) {
                 e.printStackTrace();

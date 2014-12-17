@@ -101,7 +101,7 @@ public class LotCard extends JPanel {
 
         IWsLot baseLot = lotForCard;
         try {
-            IWsLot templateLot = new IWsLot(lotForCard.getId(), null, null, null, null, null, null, null);
+            IWsLot templateLot = new IWsLot(lotForCard.getId());
             baseLot = (IWsLot) space.read(templateLot, null, Constants.SPACE_TIMEOUT);
         } catch(Exception e){
             e.printStackTrace();
@@ -238,10 +238,10 @@ public class LotCard extends JPanel {
         @Override
         public void notify(RemoteEvent ev) {
             try {
-                IWsLot template = new IWsLot(lot.getId(), null, null, null, null, null, null, null);
+                IWsLot template = new IWsLot(lot.getId());
                 final IWsLot latestLot = (IWsLot) space.read(template, null, Constants.SPACE_TIMEOUT);
 
-                IWsBid bidTemplate = new IWsBid(latestLot.getLatestBid(), null, null, null, null);
+                IWsBid bidTemplate = new IWsBid(latestLot.getLatestBid());
                 final IWsBid latestBid = (IWsBid) space.read(bidTemplate, null, Constants.SPACE_TIMEOUT);
 
                 Vector<String> insertion = new Vector<String>(){{
