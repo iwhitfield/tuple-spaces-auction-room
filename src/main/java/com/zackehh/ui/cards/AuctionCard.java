@@ -395,7 +395,7 @@ public class AuctionCard extends JPanel {
                     model.setValueAt("Ended", currentIndex, 4);
 
                     // Display a dialog if the current user won the ended item
-                    if(UserUtils.getCurrentUser().getId().matches(lot.getUser().getId())){
+                    if(UserUtils.getCurrentUser().equals(lot.getUser())){
                         JOptionPane.showMessageDialog(null, "You just won " + lot.getItemName() + "!");
                     }
                 }

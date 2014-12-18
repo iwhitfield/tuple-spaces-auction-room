@@ -164,7 +164,7 @@ public class LotCard extends JPanel {
         if(!lot.hasEnded()) {
 
             // If the user is the Seller of the lot
-            if (UserUtils.getCurrentUser().getId().matches(lot.getUser().getId())) {
+            if (UserUtils.getCurrentUser().equals(lot.getUser())) {
 
                 // If there are no bids, the Seller can remove the lot
                 if(lot.getLatestBid() == null){
@@ -293,7 +293,7 @@ public class LotCard extends JPanel {
                 }};
 
                 // If there is a latest bid
-                if(latestLot.getLatestBid() != null){
+                if(latestLot.getLatestBid() != null && UserUtils.getCurrentUser().equals(lot.getUser())){
                     // Allow the Seller to now accept the bids instead of remove them
                     acceptBidOrRemoveLot.setText("Accept Latest Bid");
                     acceptBidOrRemoveLot.addMouseListener(acceptBidListener);
