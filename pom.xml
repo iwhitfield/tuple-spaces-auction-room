@@ -8,6 +8,8 @@
     <artifactId>javaspaces</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <name>Distributed Client and Server Systems Assignment 1</name>
+
     <properties>
         <apache.river.version>2.2.2</apache.river.version>
     </properties>

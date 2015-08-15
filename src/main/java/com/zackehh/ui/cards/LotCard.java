@@ -339,7 +339,7 @@ public class LotCard extends JPanel {
                 final IWsItemRemover remover = (IWsItemRemover) space.read(new IWsItemRemover(lot.getId()), null, Constants.SPACE_TIMEOUT);
 
                 // If it was removed due to being won
-                if(remover.ended){
+                if(remover.hasEnded()){
                     // Grab the winning bid from the table
                     Vector<String> winningBid = bidHistory.get(0);
 
@@ -360,7 +360,7 @@ public class LotCard extends JPanel {
                 }
 
                 // If the Seller removed the item
-                if(remover.removed){
+                if(remover.hasBeenRemoved()){
                     // Prompt that the lot was removed
                     JOptionPane.showMessageDialog(null, "This lot has been removed!");
                     // Return to the main UI

@@ -122,6 +122,12 @@ public class AuctionCard extends JPanel {
                         return;
                     }
 
+                    // Check for no longer available - should never be needed
+                    if (lots.get(row).isMarkedForRemoval()){
+                        JOptionPane.showMessageDialog(null, "This item is no longer available!");
+                        return;
+                    }
+
                     // Add a new card, using the selected lot
                     cards.add(new LotCard(cards, lots.get(row)), Constants.BID_CARD);
 
